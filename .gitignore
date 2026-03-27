@@ -205,3 +205,26 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+# Fly.io — actual deployment config is private
+fly.toml
+.fly/
+
+# Private deployment docs
+deploy/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# spaCy models (downloaded at build time, not committed)
+en_core_web_*
+
+# IDE
+.vscode/
+.idea/
+
+# Test artifacts
+.coverage
+htmlcov/
+.pytest_cache/
