@@ -1,0 +1,26 @@
+# Copy to fly.toml and customize for your deployment
+# DO NOT commit fly.toml — it's in .gitignore
+app = "your-app-name"
+primary_region = "ewr"  # Pick closest region
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[vm]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 2
+
+[checks]
+  [checks.health]
+    port = 8080
+    type = "http"
+    interval = "30s"
+    timeout = "5s"
+    path = "/v1/health"

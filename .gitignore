@@ -208,6 +208,7 @@ __marimo__/
 # Fly.io — actual deployment config is private
 fly.toml
 .fly/
+*.secret
 
 # Private deployment docs
 deploy/

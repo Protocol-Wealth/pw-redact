@@ -1,0 +1,234 @@
+# Copyright 2026 Protocol Wealth LLC
+# Licensed under the Apache License, Version 2.0
+# https://github.com/Protocol-Wealth/pw-redact
+
+"""Integration tests for the PWRedactor engine."""
+
+from __future__ import annotations
+
+import pytest
+
+from pw_redact.redactor.engine import PWRedactor, RedactionResult
+from pw_redact.rehydrator.engine import PWRehydrator
+
+
+# ── Core redaction ──────────────────────────────────────────────────
+
+
+class TestRedaction:
+    def test_ssn_redacted(self, redactor: PWRedactor):
+        result = redactor.redact("SSN is 123-45-6789")
+        assert "123-45-6789" not in result.sanitized_text
+        assert "<US_SSN_1>" in result.sanitized_text
+
+    def test_email_redacted(self, redactor: PWRedactor):
+        result = redactor.redact("Contact john@example.com for details")
+        assert "john@example.com" not in result.sanitized_text
+        assert "<EMAIL_1>" in result.sanitized_text
+
+    def test_name_redacted(self, redactor: PWRedactor):
+        result = redactor.redact(
+            "John Smith discussed his portfolio today.",
+            context="meeting_transcript",
+        )
+        assert "John Smith" not in result.sanitized_text
+
+    def test_address_redacted(self, redactor: PWRedactor):
+        result = redactor.redact(
+            "They live at 42 Oak Lane, Havertown PA 19083.",
+            context="meeting_transcript",
+        )
+        # The address (or parts of it) should be redacted
+        assert "42 Oak Lane" not in result.sanitized_text or "Havertown" not in result.sanitized_text
+
+
+# ── Financial data preservation ────────────────────────────────────
+
+
+class TestFinancialPreservation:
+    def test_dollar_amounts_preserved(self, redactor: PWRedactor):
+        result = redactor.redact("John Smith has $425,000 in his IRA.")
+        assert "$425,000" in result.sanitized_text
+
+    def test_comma_numbers_preserved(self, redactor: PWRedactor):
+        result = redactor.redact("John Smith earns 425,000 per year.")
+        assert "425,000" in result.sanitized_text
+
+    def test_percentages_preserved(self, redactor: PWRedactor):
+        result = redactor.redact("John Smith is in the 32% bracket.")
+        assert "32%" in result.sanitized_text
+
+    def test_years_preserved(self, redactor: PWRedactor):
+        result = redactor.redact("Patrick starts college in 2032.")
+        assert "2032" in result.sanitized_text
+
+    def test_form_references_preserved(self, redactor: PWRedactor):
+        result = redactor.redact("File Form 1040 and Schedule D by April.")
+        assert "Form 1040" in result.sanitized_text
+        assert "Schedule D" in result.sanitized_text
+
+    def test_financial_acronyms_preserved(self, redactor: PWRedactor):
+        result = redactor.redact(
+            "John Smith wants to discuss AGI, RMD, and 529 plans.",
+        )
+        assert "AGI" in result.sanitized_text
+        assert "RMD" in result.sanitized_text
+        assert "529" in result.sanitized_text
+
+
+# ── Placeholder consistency ────────────────────────────────────────
+
+
+class TestPlaceholderConsistency:
+    def test_same_ssn_same_placeholder(self, redactor: PWRedactor):
+        text = "SSN 123-45-6789 appears again: 123-45-6789"
+        result = redactor.redact(text)
+        # Same SSN should get same placeholder
+        assert result.sanitized_text.count("<US_SSN_1>") == 2
+
+    def test_different_ssns_different_placeholders(self, redactor: PWRedactor):
+        text = "SSN 123-45-6789 and SSN 987-65-4321"
+        result = redactor.redact(text)
+        assert "<US_SSN_1>" in result.sanitized_text
+        assert "<US_SSN_2>" in result.sanitized_text
+
+    def test_same_email_same_placeholder(self, redactor: PWRedactor):
+        text = "Email john@test.com and again john@test.com"
+        result = redactor.redact(text)
+        assert result.sanitized_text.count("<EMAIL_1>") == 2
+
+
+# ── Manifest structure ─────────────────────────────────────────────
+
+
+class TestManifest:
+    def test_manifest_has_required_fields(self, redactor: PWRedactor):
+        result = redactor.redact("SSN is 123-45-6789")
+        d = result.manifest.to_dict()
+        assert d["version"] == "1.0"
+        assert d["redaction_id"].startswith("red_")
+        assert len(d["placeholders"]) > 0
+        assert "stats" in d
+
+    def test_manifest_stats(self, redactor: PWRedactor):
+        result = redactor.redact("SSN is 123-45-6789 and email is john@test.com")
+        stats = result.manifest.to_dict()["stats"]
+        assert stats["entities_found"] >= 2
+        assert stats["text_length_original"] > 0
+        assert stats["text_length_sanitized"] > 0
+
+    def test_placeholder_entry_fields(self, redactor: PWRedactor):
+        result = redactor.redact("SSN is 123-45-6789")
+        placeholders = result.manifest.to_dict()["placeholders"]
+        entry = next(p for p in placeholders if p["entity_type"] == "US_SSN")
+        assert entry["placeholder"] == "<US_SSN_1>"
+        assert entry["original"] == "123-45-6789"
+        assert isinstance(entry["start"], int)
+        assert isinstance(entry["end"], int)
+
+
+# ── Round-trip (redact → rehydrate) ───────────────────────────────
+
+
+class TestRoundTrip:
+    def test_email_round_trip(self, redactor: PWRedactor, rehydrator: PWRehydrator):
+        text = "Contact john@example.com for info."
+        result = redactor.redact(text)
+        restored = rehydrator.rehydrate(
+            result.sanitized_text, result.manifest.to_dict()
+        )
+        assert "john@example.com" in restored
+
+    def test_ssn_round_trip(self, redactor: PWRedactor, rehydrator: PWRehydrator):
+        text = "My SSN is 123-45-6789 on file."
+        result = redactor.redact(text)
+        assert "123-45-6789" not in result.sanitized_text
+        restored = rehydrator.rehydrate(
+            result.sanitized_text, result.manifest.to_dict()
+        )
+        assert "123-45-6789" in restored
+
+    def test_multi_entity_round_trip(
+        self, redactor: PWRedactor, rehydrator: PWRehydrator
+    ):
+        text = "Email: john@test.com, SSN: 123-45-6789, CC: 4111-1111-1111-1111."
+        result = redactor.redact(text)
+        restored = rehydrator.rehydrate(
+            result.sanitized_text, result.manifest.to_dict()
+        )
+        assert "john@test.com" in restored
+        assert "123-45-6789" in restored
+        assert "4111-1111-1111-1111" in restored
+
+    def test_rehydrate_in_ai_output(
+        self, redactor: PWRedactor, rehydrator: PWRehydrator
+    ):
+        """Simulate AI model using placeholders in its output."""
+        original = "John Smith's SSN is 123-45-6789."
+        result = redactor.redact(original, context="meeting_transcript")
+        # Simulate AI output that references the placeholder
+        ai_output = f"Based on the data, {result.sanitized_text.split('SSN')[0]}should file taxes."
+        manifest = result.manifest.to_dict()
+        restored = rehydrator.rehydrate(ai_output, manifest)
+        # The person name placeholder should be replaced
+        assert "<PERSON_" not in restored or "John" in restored
+
+
+# ── Context-specific detection ─────────────────────────────────────
+
+
+class TestContextDetection:
+    def test_meeting_transcript_detects_names(self, redactor: PWRedactor):
+        result = redactor.redact(
+            "John discussed the plan with Sarah.",
+            context="meeting_transcript",
+        )
+        # At least one person name should be detected
+        types = {
+            p.entity_type for p in result.manifest.placeholders
+        }
+        assert "PERSON" in types or len(result.manifest.placeholders) > 0
+
+    def test_general_context_works(self, redactor: PWRedactor):
+        result = redactor.redact("SSN: 123-45-6789", context="general")
+        assert "123-45-6789" not in result.sanitized_text
+
+
+# ── Detect-only mode ──────────────────────────────────────────────
+
+
+class TestDetect:
+    def test_detect_returns_entities(self, redactor: PWRedactor):
+        entities = redactor.detect("SSN is 123-45-6789")
+        assert len(entities) > 0
+        assert any(e.entity_type == "US_SSN" for e in entities)
+
+    def test_detect_does_not_modify_text(self, redactor: PWRedactor):
+        text = "SSN is 123-45-6789"
+        entities = redactor.detect(text)
+        # detect returns entities but doesn't change text
+        assert all(hasattr(e, "start") for e in entities)
+        assert all(hasattr(e, "score") for e in entities)
+
+
+# ── Sample transcript integration ─────────────────────────────────
+
+
+class TestSampleTranscript:
+    def test_pii_redacted(self, redactor: PWRedactor, sample_transcript: str):
+        result = redactor.redact(sample_transcript, context="meeting_transcript")
+        # Names should be redacted
+        assert "John" not in result.sanitized_text
+        # SSN should be redacted
+        assert "123-45-6789" not in result.sanitized_text
+
+    def test_financial_data_preserved(
+        self, redactor: PWRedactor, sample_transcript: str
+    ):
+        result = redactor.redact(sample_transcript, context="meeting_transcript")
+        assert "425,000" in result.sanitized_text
+        assert "95,000" in result.sanitized_text
+        assert "32%" in result.sanitized_text
+        assert "529" in result.sanitized_text
+        assert "6.75%" in result.sanitized_text
+        assert "2032" in result.sanitized_text

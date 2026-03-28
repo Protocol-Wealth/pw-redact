@@ -1,0 +1,21 @@
+Tax Year 2025 — Preliminary Review
+Client: Robert and Lisa Chen
+Filing Status: MFJ
+SSN: 456-78-9012 / 567-89-0123
+EIN: 34-5678901 (Chen Family Trust)
+
+W2 Income (Robert): 285,000
+W2 Income (Lisa): 142,000
+Combined AGI: 427,000 (before adjustments)
+
+1099-INT: 12,500 (First National Bank, acct #8834567890)
+1099-DIV: 45,200 (Vanguard, qualified)
+Schedule E Rental: 36,000 net (Property at 15 Maple Court, Princeton NJ 08540)
+
+Estimated tax bracket: 35%
+QBI deduction: N/A (combined income exceeds threshold)
+RMD: Not applicable (both under 73)
+529 contribution: 16,000 (2 beneficiaries x 8,000 each)
+
+Notes: Explore backdoor Roth strategy. Lisa may qualify for HSA with new HDHP plan.
+Contact: robert.chen@email.com, (609) 555-7890

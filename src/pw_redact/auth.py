@@ -1,0 +1,20 @@
+# Copyright 2026 Protocol Wealth LLC
+# Licensed under the Apache License, Version 2.0
+# https://github.com/Protocol-Wealth/pw-redact
+
+"""API key authentication for service-to-service calls."""
+
+from __future__ import annotations
+
+from fastapi import Header, HTTPException
+
+from .config import settings
+
+
+async def verify_api_key(authorization: str = Header(...)) -> None:
+    """Verify internal service API key from Authorization header."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid auth format")
+    token = authorization.removeprefix("Bearer ")
+    if token != settings.pw_redact_api_key:
+        raise HTTPException(status_code=403, detail="Invalid API key")
