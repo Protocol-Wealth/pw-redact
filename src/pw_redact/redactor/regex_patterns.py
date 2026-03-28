@@ -144,6 +144,62 @@ PATTERN_DEFS: dict[str, _PatternDef] = {
         ),
         score=0.70,
     ),
+    # --- Mortgage / Real Estate / Title ---
+    "NMLS_ID": _PatternDef(
+        regex=(
+            r"(?i)(?:NMLS|MLO)\s*(?:(?:#|no\.?|number|id)\s*)?(?:[#:=]\s*)?"
+            r"(\d{5,12})\b"
+        ),
+        score=0.80,
+        group=1,
+    ),
+    "LOAN_NUMBER": _PatternDef(
+        regex=(
+            r"(?i)(?:loan|mortgage|note)\s*(?:(?:#|no\.?|number|id)\s*)?"
+            r"(?:[#:=]\s*)?([A-Z0-9][-A-Z0-9]{7,19})\b"
+        ),
+        score=0.80,
+        group=1,
+    ),
+    "MERS_MIN": _PatternDef(
+        regex=r"(?i)(?:MERS|MIN)\s*(?:[#:=]\s*)?(\d{18})\b",
+        score=0.85,
+        group=1,
+    ),
+    "FHA_CASE_NUMBER": _PatternDef(
+        regex=(
+            r"(?i)(?:FHA|VA|USDA)\s*(?:case)?\s*(?:[#:=]\s*)?"
+            r"(\d{3}-\d{7}(?:-\d{3})?)\b"
+        ),
+        score=0.85,
+        group=1,
+    ),
+    "PARCEL_NUMBER": _PatternDef(
+        regex=(
+            r"(?i)(?:APN|parcel|tax\s*(?:parcel|id|lot)|property\s*(?:index|id|PIN)"
+            r"|assessor)\s*(?:(?:#|no\.?|number)\s*)?(?:[#:=]\s*)?"
+            r"([A-Z0-9][-A-Z0-9./]{4,24})\b"
+        ),
+        score=0.80,
+        group=1,
+    ),
+    "MLS_NUMBER": _PatternDef(
+        regex=(
+            r"(?i)(?:MLS|listing)\s*(?:(?:#|no\.?|number|id)\s*)?"
+            r"(?:[#:=]\s*)?([A-Z0-9]{6,15})\b"
+        ),
+        score=0.75,
+        group=1,
+    ),
+    "FILE_REFERENCE": _PatternDef(
+        regex=(
+            r"(?i)(?:escrow|title|closing|instrument|recording|document)"
+            r"\s*(?:(?:#|no\.?|number)\s*)?(?:[#:=]\s*)?"
+            r"([A-Z0-9][-A-Z0-9]{5,19})\b"
+        ),
+        score=0.75,
+        group=1,
+    ),
     # --- Internal system identifiers (vendor-agnostic) ---
     "CRM_ID": _PatternDef(
         regex=(

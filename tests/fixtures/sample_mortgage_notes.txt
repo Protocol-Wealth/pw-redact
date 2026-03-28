@@ -1,0 +1,36 @@
+Loan File: Pre-Qualification Summary
+Loan Officer: Amanda Chen, NMLS# 456789
+Date: January 10, 2026
+
+Borrowers: Michael and Sarah Thompson
+Property: 234 Birch Road, Naperville IL 60540
+APN: 07-14-302-015
+MLS# IL2025789012
+
+Loan Details:
+- Loan number: MTG-2025-004821
+- FHA case #321-7654321
+- Purchase price: $575,000
+- Down payment: $115,000 (20%)
+- Loan amount: $460,000
+- Rate: 6.375% (30yr FRM)
+- APR: 6.52%
+- LTV: 80%
+- DTI: 34%
+
+Borrower Profile:
+- SSN: 321-54-9876 / 654-32-1098
+- Combined income: $185,000
+- FICO scores: 742 / 718
+- Email: michael.t@email.com
+- Phone: (630) 555-8901
+
+Underwriting Notes:
+DU approval received — AUS finding: Approve/Eligible. No PMI required at 80% LTV.
+VOE completed for both borrowers. VOD verified at First Midwest Bank, acct #77234561.
+Title commitment issued by Chicago Title, escrow# CT-2025-NAP-0891.
+MERS MIN: 100098765432101234
+Closing scheduled January 28, 2026.
+
+RESPA and TILA disclosures provided. Closing Disclosure (CD) delivered January 25.
+HOA dues: $275/month. Property taxes: $12,400/year.

@@ -29,6 +29,12 @@ ALLOW_PATTERNS: list[str] = [
     r"(?:Form|Schedule|IRC\s*§?)\s*[A-Z0-9§.-]+",
     # Financial acronyms
     r"(?:AGI|MAGI|QBI|RMD|QCD|NUA|IRA|SEP|SIMPLE|401k|403b|457b|529|HSA|FSA|W2|W-2|1099)",
+    # Mortgage / underwriting / real estate acronyms
+    r"(?:LTV|DTI|PMI|PITI|MIP|UFMIP|ARM|FRM|HELOC|HEL)",
+    r"(?:TILA|RESPA|ECOA|HMDA|TRID|URLA|QM|ATR)",
+    r"(?:DU|LP|AUS|GFE|LE|CD|HUD)",
+    r"(?:ALTA|CLTA|CPL|FNMA|FHLMC|GNMA)",
+    r"(?:VOE|VOD|VOM|VOR)",
 ]
 
 # Literal strings passed to Presidio's allow_list parameter.
@@ -61,6 +67,44 @@ ALLOW_TERMS: list[str] = [
     "W2",
     "W-2",
     "1099",
+    # Mortgage / underwriting / real estate
+    "LTV",
+    "DTI",
+    "PMI",
+    "PITI",
+    "MIP",
+    "ARM",
+    "FRM",
+    "HELOC",
+    "TILA",
+    "RESPA",
+    "ECOA",
+    "HMDA",
+    "TRID",
+    "URLA",
+    "ALTA",
+    "CLTA",
+    "FNMA",
+    "FHLMC",
+    "GNMA",
+    "FHA",
+    "HUD",
+    "VOE",
+    "VOD",
+    "VOM",
+    "QM",
+    "ATR",
+    "DU",
+    "LP",
+    "AUS",
+    "GFE",
+    "APR",
+    "MERS",
+    "MLS",
+    "HOA",
+    "Fannie Mae",
+    "Freddie Mac",
+    "Ginnie Mae",
 ]
 
 

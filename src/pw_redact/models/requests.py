@@ -18,7 +18,7 @@ class RedactionOptions(BaseModel):
 
 class RedactRequest(BaseModel):
     text: str = Field(..., max_length=1_000_000)
-    context: Literal["meeting_transcript", "tax_return", "financial_notes", "general"] = "general"
+    context: Literal["meeting_transcript", "tax_return", "financial_notes", "mortgage", "real_estate", "general"] = "general"
     options: RedactionOptions | None = None
 
 
@@ -29,4 +29,4 @@ class RehydrateRequest(BaseModel):
 
 class DetectRequest(BaseModel):
     text: str = Field(..., max_length=1_000_000)
-    context: Literal["meeting_transcript", "tax_return", "financial_notes", "general"] = "general"
+    context: Literal["meeting_transcript", "tax_return", "financial_notes", "mortgage", "real_estate", "general"] = "general"

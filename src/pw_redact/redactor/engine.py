@@ -41,6 +41,16 @@ _CONTEXT_ENTITIES: dict[str, list[str]] = {
         "PERSON", "LOCATION", "PHONE_NUMBER", "EMAIL_ADDRESS",
         "US_SSN", "CREDIT_CARD",
     ],
+    "mortgage": [
+        "PERSON", "LOCATION", "PHONE_NUMBER", "EMAIL_ADDRESS",
+        "US_SSN", "CREDIT_CARD", "NRP",
+        "ACCOUNT_REF", "POLICY_NUMBER",
+    ],
+    "real_estate": [
+        "PERSON", "LOCATION", "PHONE_NUMBER", "EMAIL_ADDRESS",
+        "US_SSN", "CREDIT_CARD",
+        "ACCOUNT_REF", "POLICY_NUMBER",
+    ],
 }
 
 

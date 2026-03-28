@@ -165,6 +165,41 @@ class TestPIINotAllowed:
 # ── Allow terms ────────────────────────────────────────────────────
 
 
+# ── Mortgage / RE acronyms ─────────────────────────────────────────
+
+
+class TestMortgageAcronyms:
+    def test_ltv(self):
+        assert _matches("LTV")
+
+    def test_dti(self):
+        assert _matches("DTI")
+
+    def test_pmi(self):
+        assert _matches("PMI")
+
+    def test_alta(self):
+        assert _matches("ALTA")
+
+    def test_tila(self):
+        assert _matches("TILA")
+
+    def test_hmda(self):
+        assert _matches("HMDA")
+
+    def test_arm(self):
+        assert _matches("ARM")
+
+    def test_heloc(self):
+        assert _matches("HELOC")
+
+    def test_voe(self):
+        assert _matches("VOE")
+
+
+# ── Allow terms ────────────────────────────────────────────────────
+
+
 class TestAllowTerms:
     def test_returns_list(self):
         terms = get_allow_terms()
@@ -172,3 +207,11 @@ class TestAllowTerms:
         assert "AGI" in terms
         assert "Roth" in terms
         assert "CUSIP" in terms
+
+    def test_mortgage_terms_present(self):
+        terms = get_allow_terms()
+        assert "LTV" in terms
+        assert "ALTA" in terms
+        assert "FNMA" in terms
+        assert "FHA" in terms
+        assert "HOA" in terms

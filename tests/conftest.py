@@ -40,3 +40,8 @@ def sample_tax_notes() -> str:
 @pytest.fixture()
 def sample_meeting_notes() -> str:
     return (FIXTURES_DIR / "sample_meeting_notes.txt").read_text()
+
+
+@pytest.fixture()
+def sample_mortgage_notes() -> str:
+    return (FIXTURES_DIR / "sample_mortgage_notes.txt").read_text()

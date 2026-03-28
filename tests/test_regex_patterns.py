@@ -377,6 +377,147 @@ class TestMagicLink:
         assert "MAGIC_LINK" not in _types("reset_link=http://x.co")
 
 
+# ── NMLS_ID ────────────────────────────────────────────────────────
+
+
+class TestNMLSId:
+    def test_nmls_hash(self):
+        assert "NMLS_ID" in _types("NMLS# 123456")
+
+    def test_mlo_number(self):
+        assert "NMLS_ID" in _types("MLO: 12345678")
+
+    def test_nmls_id_colon(self):
+        assert "NMLS_ID" in _types("NMLS ID: 987654")
+
+    def test_no_context_not_nmls(self):
+        assert "NMLS_ID" not in _types("The code is 123456")
+
+    def test_too_short_ignored(self):
+        assert "NMLS_ID" not in _types("NMLS: 1234")
+
+    def test_extracted_text(self):
+        texts = _texts("NMLS #567890 on record", "NMLS_ID")
+        assert texts == ["567890"]
+
+
+# ── LOAN_NUMBER ────────────────────────────────────────────────────
+
+
+class TestLoanNumber:
+    def test_loan_hash(self):
+        assert "LOAN_NUMBER" in _types("Loan #ABC12345678")
+
+    def test_mortgage_number(self):
+        assert "LOAN_NUMBER" in _types("mortgage number: 1234567890AB")
+
+    def test_note_number(self):
+        assert "LOAN_NUMBER" in _types("note #LN-2025-0042")
+
+    def test_no_context_not_loan(self):
+        assert "LOAN_NUMBER" not in _types("Reference: ABC12345678")
+
+    def test_short_not_loan(self):
+        assert "LOAN_NUMBER" not in _types("loan# AB12")
+
+
+# ── MERS_MIN ──────────────────────────────────────────────────────
+
+
+class TestMERSMIN:
+    def test_mers_18_digits(self):
+        assert "MERS_MIN" in _types("MERS# 100123456789012345")
+
+    def test_min_colon(self):
+        assert "MERS_MIN" in _types("MIN: 100123456789012345")
+
+    def test_short_not_min(self):
+        # Only exactly 18 digits should match
+        assert "MERS_MIN" not in _types("MERS: 12345678")
+
+    def test_extracted_text(self):
+        texts = _texts("MERS# 100123456789012345 recorded", "MERS_MIN")
+        assert texts == ["100123456789012345"]
+
+
+# ── FHA_CASE_NUMBER ───────────────────────────────────────────────
+
+
+class TestFHACaseNumber:
+    def test_fha_case(self):
+        assert "FHA_CASE_NUMBER" in _types("FHA case #123-4567890")
+
+    def test_va_case_with_suffix(self):
+        assert "FHA_CASE_NUMBER" in _types("VA: 123-4567890-703")
+
+    def test_usda_case(self):
+        assert "FHA_CASE_NUMBER" in _types("USDA #456-7890123")
+
+    def test_no_context_not_fha(self):
+        assert "FHA_CASE_NUMBER" not in _types("Code: 123-4567890")
+
+    def test_extracted_text(self):
+        texts = _texts("FHA case 123-4567890-703", "FHA_CASE_NUMBER")
+        assert texts == ["123-4567890-703"]
+
+
+# ── PARCEL_NUMBER ─────────────────────────────────────────────────
+
+
+class TestParcelNumber:
+    def test_apn_dashes(self):
+        assert "PARCEL_NUMBER" in _types("APN: 123-456-789")
+
+    def test_tax_parcel(self):
+        assert "PARCEL_NUMBER" in _types("tax parcel# 12-34-567-890-0000")
+
+    def test_property_index(self):
+        assert "PARCEL_NUMBER" in _types("property index: 04-23-100-015")
+
+    def test_assessor(self):
+        assert "PARCEL_NUMBER" in _types("assessor# R1234567890")
+
+    def test_no_context_not_parcel(self):
+        assert "PARCEL_NUMBER" not in _types("The value is 123-456-789")
+
+
+# ── MLS_NUMBER ────────────────────────────────────────────────────
+
+
+class TestMLSNumber:
+    def test_mls_hash(self):
+        assert "MLS_NUMBER" in _types("MLS# PM23456789")
+
+    def test_listing_number(self):
+        assert "MLS_NUMBER" in _types("listing: 1234567890")
+
+    def test_mls_id(self):
+        assert "MLS_NUMBER" in _types("MLS ID: AR2025001")
+
+    def test_no_context_not_mls(self):
+        assert "MLS_NUMBER" not in _types("Reference: PM23456789")
+
+
+# ── FILE_REFERENCE ────────────────────────────────────────────────
+
+
+class TestFileReference:
+    def test_escrow_number(self):
+        assert "FILE_REFERENCE" in _types("escrow# NCS-123456-LA")
+
+    def test_title_number(self):
+        assert "FILE_REFERENCE" in _types("title number: T2025-00789")
+
+    def test_instrument_number(self):
+        assert "FILE_REFERENCE" in _types("instrument# 2025-0123456")
+
+    def test_closing_number(self):
+        assert "FILE_REFERENCE" in _types("closing #CLO-2025-987")
+
+    def test_no_context_not_file(self):
+        assert "FILE_REFERENCE" not in _types("Reference: NCS-123456-LA")
+
+
 # ── US_ROUTING (from pw-nexus mcp_pii_filter.py) ──────────────────
 
 

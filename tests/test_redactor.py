@@ -214,6 +214,52 @@ class TestDetect:
 # ── Sample transcript integration ─────────────────────────────────
 
 
+# ── Mortgage document integration ──────────────────────────────────
+
+
+class TestMortgageDocument:
+    def test_pii_redacted(self, redactor: PWRedactor, sample_mortgage_notes: str):
+        result = redactor.redact(sample_mortgage_notes, context="mortgage")
+        assert "321-54-9876" not in result.sanitized_text
+        assert "654-32-1098" not in result.sanitized_text
+        assert "michael.t@email.com" not in result.sanitized_text
+        assert "(630) 555-8901" not in result.sanitized_text
+
+    def test_financial_data_preserved(
+        self, redactor: PWRedactor, sample_mortgage_notes: str
+    ):
+        result = redactor.redact(sample_mortgage_notes, context="mortgage")
+        assert "$575,000" in result.sanitized_text
+        assert "6.375%" in result.sanitized_text
+        assert "80%" in result.sanitized_text
+        assert "34%" in result.sanitized_text
+        assert "$460,000" in result.sanitized_text
+
+    def test_mortgage_acronyms_preserved(
+        self, redactor: PWRedactor, sample_mortgage_notes: str
+    ):
+        result = redactor.redact(sample_mortgage_notes, context="mortgage")
+        assert "LTV" in result.sanitized_text
+        assert "DTI" in result.sanitized_text
+        assert "PMI" in result.sanitized_text
+        assert "FRM" in result.sanitized_text
+        assert "RESPA" in result.sanitized_text
+        assert "TILA" in result.sanitized_text
+        assert "HOA" in result.sanitized_text
+
+    def test_mortgage_identifiers_redacted(
+        self, redactor: PWRedactor, sample_mortgage_notes: str
+    ):
+        result = redactor.redact(sample_mortgage_notes, context="mortgage")
+        # NMLS ID should be redacted
+        assert "456789" not in result.sanitized_text or "<NMLS_ID_1>" in result.sanitized_text
+        # SSNs should definitely be redacted
+        assert "321-54-9876" not in result.sanitized_text
+
+
+# ── Sample transcript integration ─────────────────────────────────
+
+
 class TestSampleTranscript:
     def test_pii_redacted(self, redactor: PWRedactor, sample_transcript: str):
         result = redactor.redact(sample_transcript, context="meeting_transcript")
