@@ -16,13 +16,6 @@ classifiers = [
     "Topic :: Text Processing",
     "Typing :: Typed",
 ]
-
-[project.urls]
-Homepage = "https://github.com/Protocol-Wealth/pw-redact"
-Repository = "https://github.com/Protocol-Wealth/pw-redact"
-Issues = "https://github.com/Protocol-Wealth/pw-redact/issues"
-Documentation = "https://github.com/Protocol-Wealth/pw-redact/tree/main/docs"
-Changelog = "https://github.com/Protocol-Wealth/pw-redact/blob/main/CHANGELOG.md"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
@@ -41,6 +34,13 @@ dev = [
     "httpx>=0.27.0",
     "ruff>=0.7.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Protocol-Wealth/pw-redact"
+Repository = "https://github.com/Protocol-Wealth/pw-redact"
+Issues = "https://github.com/Protocol-Wealth/pw-redact/issues"
+Documentation = "https://github.com/Protocol-Wealth/pw-redact/tree/main/docs"
+Changelog = "https://github.com/Protocol-Wealth/pw-redact/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["setuptools>=75.0", "wheel"]
