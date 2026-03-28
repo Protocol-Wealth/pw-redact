@@ -157,7 +157,7 @@ Returns service status, version, and whether NLP models are loaded.
 | SSN | "123-45-6789", "123 45 6789" |
 | Phone | "(610) 555-1234", "+1-610-555-1234" |
 | Email | "john@example.com" |
-| Address | "42 Oak Lane, Havertown PA 19083" |
+| Address | "42 Oak Lane, City PA 19000" |
 | Credit Card | "4111 1111 1111 1111" |
 | EIN | "12-3456789" |
 | Account Numbers | "account #12345678" |
