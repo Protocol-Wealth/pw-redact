@@ -3,7 +3,7 @@ name = "pw-redact"
 version = "0.1.0"
 description = "Open-source PII redaction engine for financial services AI pipelines"
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 requires-python = ">=3.12"
 keywords = ["pii", "redaction", "privacy", "financial", "compliance", "presidio", "ria", "fintech"]
 classifiers = [
