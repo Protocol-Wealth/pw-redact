@@ -5,6 +5,24 @@ description = "Open-source PII redaction engine for financial services AI pipeli
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.12"
+keywords = ["pii", "redaction", "privacy", "financial", "compliance", "presidio", "ria", "fintech"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Text Processing",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/Protocol-Wealth/pw-redact"
+Repository = "https://github.com/Protocol-Wealth/pw-redact"
+Issues = "https://github.com/Protocol-Wealth/pw-redact/issues"
+Documentation = "https://github.com/Protocol-Wealth/pw-redact/tree/main/docs"
+Changelog = "https://github.com/Protocol-Wealth/pw-redact/blob/main/CHANGELOG.md"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",

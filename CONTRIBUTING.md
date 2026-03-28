@@ -1,5 +1,11 @@
 # Contributing to pw-redact
 
+Thank you for your interest in contributing! pw-redact is open-source infrastructure
+for financial services PII redaction. Contributions from the fintech and advisory
+community are welcome.
+
+**Security issues:** Do not open public issues. Email [security@protocolwealthllc.com](mailto:security@protocolwealthllc.com). See [SECURITY.md](SECURITY.md).
+
 ## Code Standards
 
 - Python 3.12+, type hints on all public functions

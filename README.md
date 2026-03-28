@@ -12,12 +12,50 @@ investment adviser, to ensure client data never reaches third-party AI models.
 > We believe transparency in how client data is handled shouldn't be a competitive
 > secret — it should be an industry standard.
 
+---
+
+**Table of Contents:**
+[Why This Exists](#why-this-exists) |
+[How It Works](#how-it-works) |
+[Quick Start](#quick-start) |
+[API Reference](#api-reference) |
+[Supported Entity Types](#supported-entity-types) |
+[Security](#security) |
+[Use Cases](#use-cases) |
+[Testing](#testing) |
+[Performance](#performance) |
+[Deployment](#deployment) |
+[Project Structure](#project-structure) |
+[Documentation](#documentation) |
+[Contributing](#contributing) |
+[License](#license)
+
+---
+
 ## Why This Exists
 
 Financial advisors increasingly use AI for meeting transcription, tax analysis,
 and planning recommendations. Most solutions send raw client data — names, SSNs,
 addresses — to cloud AI providers. pw-redact sits between your data and the AI
 model, stripping PII while preserving the financial data models need to work.
+
+**The problem:**
+```
+"John Smith's AGI is $425,000. SSN: 123-45-6789."
+                    ↓ sent to AI model ↓
+        AI sees real names, real SSNs — compliance violation
+```
+
+**With pw-redact:**
+```
+"John Smith's AGI is $425,000. SSN: 123-45-6789."
+                    ↓ pw-redact /v1/redact ↓
+"<PERSON_1> AGI is $425,000. SSN: <US_SSN_1>."
+                    ↓ sent to AI model ↓
+        AI sees placeholders — PII never leaves your infrastructure
+                    ↓ pw-redact /v1/rehydrate ↓
+        Original names restored for advisor display
+```
 
 ## How It Works
 
@@ -27,12 +65,16 @@ pw-redact uses a four-layer architecture to catch PII while preserving financial
 Raw text (transcript, tax notes, mortgage docs)
         |
         v
+   [ Security Layer ]
+   Input validation, prompt injection detection, rate limiting
+        |
+        v
    pw-redact /v1/redact
    |-- Layer 1: Deterministic regex (SSN, CC, EIN, loan numbers, crypto keys...)
-   |-- Layer 2: Presidio NLP (names, addresses, phone, email)
+   |-- Layer 2: Presidio NLP (names, addresses, phone, email via spaCy NER)
    |-- Layer 3: Custom financial recognizers (CUSIP, account refs, policy numbers)
    |-- Layer 4: Allow-list (preserve $amounts, %, tax brackets, dates)
-   `-- Returns: sanitized_text + redaction_manifest
+   `-- Returns: sanitized_text + redaction_manifest + security metadata
         |
         v
    Sanitized text -> your AI model (safe to send externally)
@@ -45,18 +87,26 @@ Raw text (transcript, tax notes, mortgage docs)
 
 **Key design principles:**
 
-- **Stateless** — pw-redact stores nothing. Manifests are returned to the caller.
+- **Stateless** — pw-redact stores nothing. No database, no disk writes. Manifests are returned to the caller.
 - **Deterministic first** — Regex patterns run before NLP. If regex catches it, NLP doesn't need to.
-- **Financial data survives** — Dollar amounts, percentages, tax brackets, basis points pass through intact.
+- **Financial data survives** — Dollar amounts, percentages, tax brackets, basis points, and 60+ financial acronyms pass through intact.
 - **Consistent placeholders** — "John Smith" becomes `<PERSON_1>` everywhere in the document, so the AI model can track entity relationships.
+- **Security built in** — Input sanitization, prompt injection detection, output validation, and rate limiting are part of the pipeline, not bolted on.
+
+For deep architecture details, see [docs/architecture.md](docs/architecture.md).
 
 ## Quick Start
 
 ### Install
 
 ```bash
+# With pip
 pip install -e ".[dev]"
 python -m spacy download en_core_web_lg
+
+# With uv (faster)
+uv venv && uv pip install -e ".[dev]"
+uv pip install en_core_web_lg@https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl
 ```
 
 ### As a Library
@@ -77,9 +127,6 @@ result = redactor.redact(
 print(result.sanitized_text)
 # "<PERSON_1> has SSN <US_SSN_1>. His AGI is $425,000."
 
-print(result.manifest.to_dict())
-# {"version": "1.0", "redaction_id": "red_...", "placeholders": [...], "stats": {...}}
-
 # Rehydrate after AI processing
 ai_output = "Based on the data, <PERSON_1> should consider a Roth conversion."
 restored = rehydrator.rehydrate(ai_output, result.manifest.to_dict())
@@ -87,13 +134,26 @@ print(restored)
 # "Based on the data, John Smith should consider a Roth conversion."
 ```
 
+### Different Document Contexts
+
+```python
+# Meeting transcript — aggressive name detection
+result = redactor.redact(text, context="meeting_transcript")
+
+# Tax return — catches EINs, ITINs
+result = redactor.redact(text, context="tax_return")
+
+# Mortgage document — catches NMLS, loan numbers, APN, FHA case numbers
+result = redactor.redact(text, context="mortgage")
+
+# Real estate — catches parcel numbers, MLS, title references
+result = redactor.redact(text, context="real_estate")
+```
+
 ### As an API Server
 
 ```bash
-# Set your API key
 export PW_REDACT_API_KEY=your-secret-key
-
-# Start the server
 uvicorn pw_redact.main:app --host 0.0.0.0 --port 8080
 ```
 
@@ -119,35 +179,96 @@ docker run -p 8080:8080 -e PW_REDACT_API_KEY=your-key pw-redact
 
 ### POST /v1/redact
 
-Redact PII from text. Returns sanitized text and a manifest for later rehydration.
+Redact PII from text. Returns sanitized text, a manifest for rehydration, and security metadata.
 
 **Request:**
 ```json
 {
   "text": "John Smith discussed his AGI of $425,000. SSN: 123-45-6789.",
-  "context": "meeting_transcript",
-  "options": {
-    "preserve_amounts": true,
-    "preserve_dates": true,
-    "preserve_percentages": true,
-    "redaction_style": "placeholder"
-  }
+  "context": "meeting_transcript"
 }
 ```
 
 **Context values:** `meeting_transcript` | `tax_return` | `financial_notes` | `mortgage` | `real_estate` | `general`
 
+**Response:**
+```json
+{
+  "sanitized_text": "<PERSON_1> discussed his AGI of $425,000. SSN: <US_SSN_1>.",
+  "manifest": {
+    "version": "1.0",
+    "redaction_id": "red_a1b2c3d4",
+    "placeholders": [
+      {"placeholder": "<PERSON_1>", "original": "John Smith", "entity_type": "PERSON", "start": 0, "end": 10},
+      {"placeholder": "<US_SSN_1>", "original": "123-45-6789", "entity_type": "US_SSN", "start": 47, "end": 58}
+    ],
+    "stats": {"entities_found": 2, "entities_by_type": {"PERSON": 1, "US_SSN": 1}, "text_length_original": 60, "text_length_sanitized": 58}
+  },
+  "security": {
+    "input_sanitized": false,
+    "sanitization_actions": [],
+    "injection_detected": false,
+    "injection_score": 0.0,
+    "injection_patterns": [],
+    "output_valid": true,
+    "output_warnings": [],
+    "request_id": "req_a1b2c3d4e5f6"
+  }
+}
+```
+
+**Response headers:**
+- `X-Request-ID` — Unique request identifier for tracing
+- `X-Processing-Time-Ms` — Server-side processing time
+
 ### POST /v1/rehydrate
 
 Restore original values from placeholders using the manifest.
 
+**Request:**
+```json
+{
+  "text": "Based on <PERSON_1>'s data, a Roth conversion is recommended.",
+  "manifest": {"version": "1.0", "redaction_id": "red_a1b2c3d4", "placeholders": [...]}
+}
+```
+
+**Response:**
+```json
+{
+  "rehydrated_text": "Based on John Smith's data, a Roth conversion is recommended."
+}
+```
+
 ### POST /v1/detect
 
-Detect PII locations without redacting. Returns entity positions and types for UI highlighting.
+Detect PII locations without redacting. Returns entity positions, types, and confidence scores. Useful for UI highlighting.
+
+**Request:**
+```json
+{
+  "text": "John Smith's SSN is 123-45-6789.",
+  "context": "general"
+}
+```
+
+**Response:**
+```json
+{
+  "entities": [
+    {"entity_type": "PERSON", "text": "John Smith", "start": 0, "end": 10, "score": 0.85},
+    {"entity_type": "US_SSN", "text": "123-45-6789", "start": 20, "end": 31, "score": 0.90}
+  ]
+}
+```
 
 ### GET /v1/health
 
-Returns service status, version, and whether NLP models are loaded. No authentication required.
+No authentication required.
+
+```json
+{"status": "healthy", "version": "0.1.0", "models_loaded": true}
+```
 
 ## Supported Entity Types
 
@@ -207,7 +328,7 @@ Presidio entities vary by context. spaCy `en_core_web_lg` provides the NER backb
 
 ### Layer 4: Financial Data Preserved
 
-The allow-list ensures these are **never redacted**:
+The allow-list ensures these are **never redacted**. See [docs/allow-list-guide.md](docs/allow-list-guide.md) for details on customizing.
 
 | Type | Examples |
 |------|----------|
@@ -221,33 +342,10 @@ The allow-list ensures these are **never redacted**:
 | Financial acronyms | AGI, RMD, QCD, 529, W2, 1099 |
 | Mortgage/RE terms | LTV, DTI, PMI, TILA, RESPA, HMDA, ALTA, FNMA, VOE |
 
-## Use Cases
-
-- **Meeting transcript sanitization** before AI summarization
-- **Tax return data extraction** with PII stripped
-- **Mortgage/underwriting documents** processed for AI analysis
-- **Real estate/title documents** with buyer/seller PII removed
-- **Compliance-safe AI integration** for RIAs, broker-dealers, and lenders
-- **Client communication review** before sending to AI for drafting
-
-## Testing
-
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run specific test file
-pytest tests/test_regex_patterns.py -v
-
-# Run with timing
-pytest tests/ -v --tb=short
-```
-
-**Current:** 276 tests, ~3s runtime (session-scoped spaCy model load).
-
 ## Security
 
-pw-redact includes built-in security hardening for AI pipeline protection:
+pw-redact includes built-in security hardening for AI pipeline protection.
+For vulnerability reports, see [SECURITY.md](SECURITY.md).
 
 ### Input Validation
 - Max payload: 1MB / 50,000 lines (rejects with 413)
@@ -259,10 +357,10 @@ pw-redact includes built-in security hardening for AI pipeline protection:
 - Normalizes excessive whitespace while preserving paragraph structure
 
 ### Prompt Injection Detection
-- Scans for known injection phrases: "ignore previous instructions", "reveal your prompt", identity manipulation ("pretend you are"), fake delimiters (`<|im_start|>`, `[INST]`), encoded variants (leetspeak, spaced characters)
+- 25 patterns across 7 categories: instruction override, identity manipulation, prompt extraction, injection keywords, encoded variants (leetspeak, spaced characters), role-play/persona, delimiter manipulation
 - Returns a confidence score (0.0-1.0) and list of matched patterns
-- **Advisory only** — flags suspicious input but does NOT block it. Advisors may legitimately paste client emails containing unusual text. The caller (your application) decides policy.
-- Injection data is included in the `/v1/redact` response under a `security` key
+- **Advisory only** — flags suspicious input but does NOT block it. Advisors may legitimately paste client emails containing unusual text. The caller decides policy.
+- Injection data included in the `/v1/redact` response `security` key
 
 ### Output Validation
 - Verifies no original PII values leaked into `sanitized_text`
@@ -273,11 +371,37 @@ pw-redact includes built-in security hardening for AI pipeline protection:
 - In-memory token bucket per API key
 - Default: 60 requests/minute, 10 requests/second burst
 - Returns 429 with `Retry-After` header when exceeded
-- Configurable via `RATE_LIMIT_RPM` env var
+- Configurable via `RATE_LIMIT_RPM` and `RATE_LIMIT_BURST` env vars
 
-### Response Headers
-- `X-Request-ID` — UUID for request tracing
-- `X-Processing-Time-Ms` — Server-side processing time
+### Request Tracing
+- `X-Request-ID` header on every response (UUID)
+- `X-Processing-Time-Ms` header for latency monitoring
+
+## Use Cases
+
+- **Meeting transcript sanitization** before AI summarization
+- **Tax return data extraction** with PII stripped
+- **Mortgage/underwriting documents** processed for AI analysis
+- **Real estate/title documents** with buyer/seller PII removed
+- **Compliance-safe AI integration** for RIAs, broker-dealers, and lenders
+- **Client communication review** before sending to AI for drafting
+- **Crypto/DeFi operations** with wallet addresses and private keys redacted
+
+## Testing
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_regex_patterns.py -v
+pytest tests/test_security.py -v
+
+# Run with timing
+pytest tests/ -v --tb=short
+```
+
+**Current:** 276 tests, ~3s runtime (session-scoped spaCy model load).
 
 ## Performance
 
@@ -290,39 +414,109 @@ pw-redact includes built-in security hardening for AI pipeline protection:
 | Memory | ~1.2GB steady-state | en_core_web_lg (~560MB) + Presidio + overhead |
 | Docker image | ~1.0GB | Python 3.12 slim + spaCy model |
 
-## Development
-
-```bash
-# Clone and install
-git clone https://github.com/Protocol-Wealth/pw-redact.git
-cd pw-redact
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-python -m spacy download en_core_web_lg
-
-# Run tests
-pytest tests/ -v
-
-# Lint
-ruff check src/
-```
-
 ## Deployment
 
-pw-redact runs as a stateless container on any platform that supports Docker:
-Fly.io, Railway, AWS ECS, Google Cloud Run, etc.
-
-See `fly.toml.example` for a Fly.io template. Copy it to `fly.toml`, set your
-app name and region, then deploy:
+pw-redact runs as a stateless container. See [docs/deployment.md](docs/deployment.md) for full guide.
 
 ```bash
-fly launch
-fly secrets set PW_REDACT_API_KEY=your-strong-random-key
+# Fly.io (quick start)
+cp fly.toml.example fly.toml  # edit app name and region
+fly apps create your-app-name
+fly secrets set PW_REDACT_API_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(48))")
 fly deploy
 ```
 
-**Note:** Use at least 2GB RAM. The spaCy `en_core_web_lg` model loads at ~560MB;
-1GB VMs will OOM during startup.
+**Note:** Use at least 2GB RAM. spaCy `en_core_web_lg` loads at ~560MB; 1GB VMs will OOM.
+
+## Project Structure
+
+```
+pw-redact/
+|-- src/pw_redact/
+|   |-- main.py                  # FastAPI app, routes, security middleware
+|   |-- config.py                # pydantic-settings env var loading
+|   |-- auth.py                  # API key authentication
+|   |-- redactor/
+|   |   |-- engine.py            # PWRedactor — orchestrates all 4 layers
+|   |   |-- regex_patterns.py    # Layer 1: 30 deterministic regex patterns
+|   |   |-- presidio_config.py   # Layer 2: Presidio + spaCy NLP setup
+|   |   |-- financial_recognizers.py  # Layer 3: CUSIP, account ref, policy
+|   |   |-- allow_list.py        # Layer 4: financial data preservation
+|   |   `-- manifest.py          # Redaction manifest data structures
+|   |-- rehydrator/
+|   |   `-- engine.py            # Manifest-based placeholder restoration
+|   |-- security/
+|   |   |-- input_validator.py   # Sanitize dangerous input
+|   |   |-- prompt_injection_detector.py  # Flag injection attempts
+|   |   |-- output_validator.py  # Verify no PII leaks in output
+|   |   `-- rate_limiter.py      # Token bucket rate limiting
+|   `-- models/
+|       |-- requests.py          # Pydantic request models
+|       `-- responses.py         # Pydantic response models
+|-- tests/
+|   |-- test_regex_patterns.py   # 100+ regex pattern tests
+|   |-- test_redactor.py         # Integration tests + round-trip
+|   |-- test_allow_list.py       # Financial data preservation
+|   |-- test_financial_recognizers.py
+|   |-- test_security.py         # Input validation, injection, rate limiting
+|   `-- fixtures/                # SYNTHETIC test data only
+|-- docs/
+|   |-- architecture.md          # Four-layer pipeline deep dive
+|   |-- deployment.md            # Docker, Fly.io, Railway, AWS/GCP guide
+|   `-- allow-list-guide.md      # How to customize financial preservation
+|-- .github/
+|   |-- workflows/ci.yml         # Lint + test on push/PR
+|   |-- ISSUE_TEMPLATE/          # Bug report + feature request templates
+|   `-- PULL_REQUEST_TEMPLATE.md # PR checklist
+|-- SECURITY.md                  # Vulnerability disclosure policy
+|-- CONTRIBUTING.md              # Code standards, PR process
+|-- CHANGELOG.md                 # Version history
+|-- CLAUDE.md                    # AI coding assistant build guide
+|-- Dockerfile                   # Production container
+|-- fly.toml.example             # Fly.io deployment template
+`-- pyproject.toml               # Dependencies, build config, tool settings
+```
+
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [README.md](README.md) | This file — overview, quick start, API reference |
+| [docs/architecture.md](docs/architecture.md) | Four-layer pipeline design, merge algorithm, security pipeline |
+| [docs/deployment.md](docs/deployment.md) | Docker, Fly.io, Railway, AWS/GCP deployment guide |
+| [docs/allow-list-guide.md](docs/allow-list-guide.md) | How to customize financial data preservation |
+| [CLAUDE.md](CLAUDE.md) | AI coding assistant guide — how this repo was built with Claude Code |
+| [SECURITY.md](SECURITY.md) | Vulnerability reporting: security@protocolwealthllc.com |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Code standards, adding patterns, PR process |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+
+## Troubleshooting
+
+**spaCy model not found:**
+```bash
+python -m spacy download en_core_web_lg
+# Or with uv:
+uv pip install en_core_web_lg@https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl
+```
+
+**OOM on Fly.io / Docker:**
+Use at least 2GB RAM. If constrained, switch to `en_core_web_md` (~40MB vs ~560MB):
+```bash
+export SPACY_MODEL=en_core_web_md
+python -m spacy download en_core_web_md
+```
+
+**False positive — financial data being redacted:**
+Check if the value matches an allow-list pattern. If not, add one.
+See [docs/allow-list-guide.md](docs/allow-list-guide.md).
+
+**False negative — PII not caught:**
+Open a [bug report](https://github.com/Protocol-Wealth/pw-redact/issues/new?template=bug_report.md)
+with synthetic example data (never real PII).
+
+**"max" detected as person name:**
+Known spaCy NLP limitation with common-word names. Over-redacting is safer than
+under-redacting. Can be tuned with Presidio score thresholds in a future release.
 
 ## Contributing
 
@@ -330,7 +524,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for code standards, test requirements, an
 
 ## License
 
-Apache 2.0 — free for commercial use.
+Apache 2.0 — free for commercial use. See [LICENSE](LICENSE).
 
 ## Built By
 
