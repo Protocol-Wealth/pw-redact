@@ -6,7 +6,7 @@
 > **GitHub:** github.com/Protocol-Wealth/pw-redact
 > **Purpose:** Open-source PII redaction engine for financial services AI pipelines
 > **Stack:** Python 3.12 · FastAPI · Presidio · spaCy · Fly.io
-> **Status:** NEW BUILD — scaffold from scratch
+> **Status:** v0.1.0 DEPLOYED — pw-redact.fly.dev (ord region, 2GB RAM)
 >
 > **Open-source rationale:** pw-redact is infrastructure, not proprietary business logic.
 > Publishing it demonstrates to regulators, clients, and the public exactly how Protocol
@@ -105,23 +105,32 @@ pw-redact (FastAPI on Fly.io)
 ### 2.2 Cross-Repo Contracts
 
 ```
-pw-nexus (CONSUMER)
+pw-nexus (CONSUMER) — CONFIRMED: integration patterns match built API
 ├── Calls POST /v1/redact before sending text to RunPod or Claude API
 ├── Calls POST /v1/rehydrate after receiving AI model output
-├── Uses PW_REDACT_API_KEY for auth
+├── Uses PW_REDACT_API_KEY for auth (Bearer token in Authorization header)
+├── Request format: {"text": "...", "context": "meeting_transcript"}
+├── Response format: {"sanitized_text": "...", "manifest": {...}}
 └── Env vars: PW_REDACT_URL, PW_REDACT_API_KEY
 
-pw-portal (CONSUMER)
+pw-portal (CONSUMER) — CONFIRMED: integration patterns match built API
 ├── Calls POST /v1/redact from Go backend when advisor pastes/uploads text
 ├── Stores redaction_manifest in Neon alongside client_id
 ├── Calls POST /v1/rehydrate to display results to advisor
+├── Rehydrate request: {"text": "...", "manifest": {...}}
+├── Rehydrate response: {"rehydrated_text": "..."}
 └── Env vars: PW_REDACT_URL, PW_REDACT_API_KEY
 
-pw-redact (PRODUCER — this repo)
+pw-redact (PRODUCER — this repo) — DEPLOYED: pw-redact.fly.dev
 ├── No database — stateless
 ├── No external API calls — all processing is local
-├── spaCy model loaded at startup (en_core_web_lg ~560MB)
-└── Presidio engines initialized once, reused per request
+├── spaCy en_core_web_lg loaded at startup via FastAPI lifespan (~560MB)
+├── Presidio AnalyzerEngine initialized once, reused per request
+├── 30 regex patterns + Presidio NLP + 3 custom recognizers + allow-list
+├── 6 document contexts: general, meeting_transcript, tax_return,
+│   financial_notes, mortgage, real_estate
+├── Endpoints: /v1/redact, /v1/rehydrate, /v1/detect, /v1/health
+└── Auth: Bearer token via PW_REDACT_API_KEY (health endpoint is public)
 ```
 
 ### 2.3 File Structure
@@ -172,11 +181,10 @@ pw-redact/
 │   ├── test_regex_patterns.py   # Regex pattern coverage
 │   ├── test_financial_recognizers.py
 │   ├── test_allow_list.py       # Verify financial data survives
-│   ├── test_rehydrator.py       # Round-trip redact→rehydrate tests
-│   ├── test_api.py              # FastAPI endpoint tests
 │   └── fixtures/
 │       ├── sample_transcript.txt      # SYNTHETIC — no real client data
 │       ├── sample_tax_notes.txt       # SYNTHETIC
+│       ├── sample_mortgage_notes.txt  # SYNTHETIC
 │       └── sample_meeting_notes.txt   # SYNTHETIC
 ├── examples/
 │   ├── quickstart.py            # Minimal usage example
@@ -850,6 +858,35 @@ When Claude Code builds this repo, follow this order:
 14. **Docs** — architecture.md, allow-list-guide.md, deployment.md
 15. **CONTRIBUTING.md** — code standards, PR process, test requirements
 16. **Deploy** — fly launch (private), fly secrets set, verify /v1/health
+
+### Build Notes (2026-03-27 actual build)
+
+**What was built:** Steps 1-10, 15-16 completed. Steps 11 (fixtures) done inline
+with step 8. Steps 12-14 deferred (examples/, docs/, CI workflow not yet created).
+
+**Deviations from spec:**
+- Dockerfile needed `COPY src/` before `pip install` (not after). Editable install
+  (`-e`) doesn't work without source present; switched to `pip install "."` for production.
+- 2GB RAM required on Fly.io. 1GB OOMs during spaCy model load (~560MB resident).
+- `en_core_web_lg` spaCy model installed via direct wheel URL with `uv pip install`
+  since `python -m spacy download` requires pip (not present in uv venvs).
+- API_KEY regex pattern needed `(?i)` flag to catch uppercase env vars like
+  `STRIPE_API_KEY=...`. The spec's pattern was case-sensitive.
+- ACCOUNT_NUMBER regex needed `account` (full word) in addition to `acc`/`acct`.
+- US_ROUTING pattern restricted to context keywords (routing/aba/transit) + ABA
+  first-digit constraint ([0-3]) rather than the spec's bare `\b[0-9]{9}\b` which
+  caused massive false positives.
+- DRIVERS_LICENSE pattern restricted to context keywords (driver/DL) rather than
+  bare `\b[A-Z]\d{7,14}\b` which matched nearly any alphanumeric reference.
+- CRM_ID and PLATFORM_ID generalized from pw-nexus vendor-specific patterns
+  (Wealthbox, Turnkey) to vendor-agnostic context keywords.
+- Added 7 mortgage/RE patterns, 3 crypto patterns, and 4 secret patterns beyond
+  the original spec, backported from pw-nexus mcp_pii_filter.py and secure_logging.py.
+- `mortgage` and `real_estate` document contexts added (not in original spec).
+- spaCy detects "John Smith's" (with possessive) as the full PERSON entity span.
+  README examples updated to match actual behavior.
+- "max" in "max out the 529" detected as PERSON by spaCy — known NLP limitation
+  with common-word names. Acceptable for V1 (over-redacting is safer than under-redacting).
 
 ---
 

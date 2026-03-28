@@ -24,23 +24,23 @@ model, stripping PII while preserving the financial data models need to work.
 pw-redact uses a four-layer architecture to catch PII while preserving financial data:
 
 ```
-Raw text (transcript, tax notes, meeting notes)
-        │
-        ▼
+Raw text (transcript, tax notes, mortgage docs)
+        |
+        v
    pw-redact /v1/redact
-   ├── Layer 1: Deterministic regex (SSN, CC, account numbers, EIN)
-   ├── Layer 2: Presidio NLP (names, addresses, phone, email)
-   ├── Layer 3: Custom financial recognizers (CUSIP, routing numbers)
-   ├── Layer 4: Allow-list (preserve $amounts, %, tax brackets, dates)
-   └── Returns: sanitized_text + redaction_manifest
-        │
-        ▼
-   Sanitized text → your AI model (safe to send externally)
-        │
-        ▼
+   |-- Layer 1: Deterministic regex (SSN, CC, EIN, loan numbers, crypto keys...)
+   |-- Layer 2: Presidio NLP (names, addresses, phone, email)
+   |-- Layer 3: Custom financial recognizers (CUSIP, account refs, policy numbers)
+   |-- Layer 4: Allow-list (preserve $amounts, %, tax brackets, dates)
+   `-- Returns: sanitized_text + redaction_manifest
+        |
+        v
+   Sanitized text -> your AI model (safe to send externally)
+        |
+        v
    pw-redact /v1/rehydrate
-   ├── Takes: AI model output + redaction_manifest
-   └── Returns: output with original values restored
+   |-- Takes: AI model output + redaction_manifest
+   `-- Returns: output with original values restored
 ```
 
 **Key design principles:**
@@ -48,14 +48,14 @@ Raw text (transcript, tax notes, meeting notes)
 - **Stateless** — pw-redact stores nothing. Manifests are returned to the caller.
 - **Deterministic first** — Regex patterns run before NLP. If regex catches it, NLP doesn't need to.
 - **Financial data survives** — Dollar amounts, percentages, tax brackets, basis points pass through intact.
-- **Consistent placeholders** — "John Smith" → `<PERSON_1>` everywhere in the document, so the AI model can track entity relationships.
+- **Consistent placeholders** — "John Smith" becomes `<PERSON_1>` everywhere in the document, so the AI model can track entity relationships.
 
 ## Quick Start
 
 ### Install
 
 ```bash
-pip install pw-redact
+pip install -e ".[dev]"
 python -m spacy download en_core_web_lg
 ```
 
@@ -70,20 +70,21 @@ rehydrator = PWRehydrator()
 
 # Redact PII
 result = redactor.redact(
-    "John Smith's SSN is 123-45-6789. His AGI is $425,000.",
+    "John Smith has SSN 123-45-6789. His AGI is $425,000.",
     context="meeting_transcript",
 )
 
 print(result.sanitized_text)
-# "<PERSON_1>'s SSN is <US_SSN_1>. His AGI is $425,000."
+# "<PERSON_1> has SSN <US_SSN_1>. His AGI is $425,000."
 
 print(result.manifest.to_dict())
 # {"version": "1.0", "redaction_id": "red_...", "placeholders": [...], "stats": {...}}
 
 # Rehydrate after AI processing
-ai_output = "Based on <PERSON_1>'s income, a Roth conversion is recommended."
+ai_output = "Based on the data, <PERSON_1> should consider a Roth conversion."
 restored = rehydrator.rehydrate(ai_output, result.manifest.to_dict())
-# "Based on John Smith's income, a Roth conversion is recommended."
+print(restored)
+# "Based on the data, John Smith should consider a Roth conversion."
 ```
 
 ### As an API Server
@@ -103,7 +104,7 @@ curl -X POST http://localhost:8080/v1/redact \
   -H "Content-Type: application/json" \
   -d '{"text": "John Smith SSN 123-45-6789", "context": "general"}'
 
-# Health check
+# Health check (no auth required)
 curl http://localhost:8080/v1/health
 ```
 
@@ -134,7 +135,7 @@ Redact PII from text. Returns sanitized text and a manifest for later rehydratio
 }
 ```
 
-**Context values:** `meeting_transcript` | `tax_return` | `financial_notes` | `general`
+**Context values:** `meeting_transcript` | `tax_return` | `financial_notes` | `mortgage` | `real_estate` | `general`
 
 ### POST /v1/rehydrate
 
@@ -146,41 +147,114 @@ Detect PII locations without redacting. Returns entity positions and types for U
 
 ### GET /v1/health
 
-Returns service status, version, and whether NLP models are loaded.
+Returns service status, version, and whether NLP models are loaded. No authentication required.
 
-## What Gets Redacted (and What Doesn't)
+## Supported Entity Types
 
-### Redacted (PII)
+### Layer 1: Regex Detection (30 patterns)
+
+All regex patterns run regardless of document context.
+
+| Category | Entity Type | Example |
+|----------|-------------|---------|
+| **PII** | `US_SSN` | 123-45-6789 |
+| | `CREDIT_CARD` | 4111 1111 1111 1111 |
+| | `EMAIL` | john@example.com |
+| | `US_PHONE` | (610) 555-1234 |
+| | `EIN` | 12-3456789 |
+| | `DATE_OF_BIRTH` | DOB: 03/15/1980, birthdate: 1980-03-15 |
+| | `ACCOUNT_NUMBER` | account #12345678 |
+| | `DRIVERS_LICENSE` | DL# A12345678 |
+| | `STREET_ADDRESS` | 42 Oak Lane, 123 Main Street #201 |
+| | `US_ROUTING` | routing: 021000021 |
+| **Secrets** | `JWT` | eyJ... tokens |
+| | `API_KEY` | api_key=..., STRIPE_API_KEY=... |
+| | `PASSWORD` | password=..., passwd:... |
+| | `SECRET_VALUE` | secret=..., SECRET_KEY=..., private_key=... |
+| | `AUTH_TOKEN` | access_token=..., refresh_token=..., session_id=... |
+| | `BEARER_TOKEN` | Bearer ... |
+| | `DB_URL` | postgres://user:pass@host |
+| | `MAGIC_LINK` | reset_link=https://... |
+| **Crypto** | `CRYPTO_PRIVATE_KEY` | 0x + 64 hex chars (ETH private keys) |
+| | `CRYPTO_ADDRESS` | 0x + 40 hex chars (ETH addresses) |
+| | `CRYPTO_SEED` | Quoted seed phrases / mnemonics |
+| **Mortgage/RE** | `NMLS_ID` | NMLS# 456789 |
+| | `LOAN_NUMBER` | Loan #MTG-2025-004821 |
+| | `MERS_MIN` | MERS# + 18 digits |
+| | `FHA_CASE_NUMBER` | FHA case #123-4567890 |
+| | `PARCEL_NUMBER` | APN: 07-14-302-015 |
+| | `MLS_NUMBER` | MLS# PM23456789 |
+| | `FILE_REFERENCE` | escrow# NCS-123456-LA |
+| **System IDs** | `CRM_ID` | client_id: 987654 |
+| | `PLATFORM_ID` | wallet_id=deadbeef... (hex/UUID) |
+
+### Layer 2: Presidio NLP Detection
+
+Presidio entities vary by context. spaCy `en_core_web_lg` provides the NER backbone.
+
+| Entity | Detected In |
+|--------|-------------|
+| `PERSON` | All contexts |
+| `LOCATION` | All contexts |
+| `PHONE_NUMBER` | All contexts |
+| `EMAIL_ADDRESS` | All contexts |
+| `US_SSN` | All contexts (backup to regex) |
+| `CREDIT_CARD` | All contexts (backup to regex) |
+| `NRP` | meeting_transcript, mortgage |
+| `CUSIP` | financial_notes |
+| `ACCOUNT_REF` | All except general |
+| `POLICY_NUMBER` | meeting_transcript, financial_notes, mortgage, real_estate |
+
+### Layer 4: Financial Data Preserved
+
+The allow-list ensures these are **never redacted**:
+
 | Type | Examples |
 |------|----------|
-| Names | "John Smith", "Dr. Jane Doe" |
-| SSN | "123-45-6789", "123 45 6789" |
-| Phone | "(610) 555-1234", "+1-610-555-1234" |
-| Email | "john@example.com" |
-| Address | "42 Oak Lane, City PA 19000" |
-| Credit Card | "4111 1111 1111 1111" |
-| EIN | "12-3456789" |
-| Account Numbers | "account #12345678" |
-
-### Preserved (Financial Data)
-| Type | Examples |
-|------|----------|
-| Dollar amounts | "$425,000", "$50k", "95,000" |
-| Percentages | "32%", "6.75%" |
-| Tax brackets | "32% bracket", "24% rate" |
-| Planning years | "2032", "2026" |
-| Form references | "Form 1040", "Schedule D", "IRC §1015" |
-| Financial acronyms | "AGI", "QCD", "RMD", "529 plan" |
-| Ages | "age 70.5", "turning 59.5" |
-| Basis points | "250 bps" |
+| Dollar amounts | $425,000, $50k, 95,000 |
+| Percentages | 32%, 6.75% |
+| Tax brackets | 32% bracket, 24% rate |
+| Basis points | 250 bps, 50 bp |
+| Planning years | 2032, 2026 |
+| Ages | age 59.5, age 70.5 |
+| Form references | Form 1040, Schedule D, IRC S1015 |
+| Financial acronyms | AGI, RMD, QCD, 529, W2, 1099 |
+| Mortgage/RE terms | LTV, DTI, PMI, TILA, RESPA, HMDA, ALTA, FNMA, VOE |
 
 ## Use Cases
 
 - **Meeting transcript sanitization** before AI summarization
 - **Tax return data extraction** with PII stripped
-- **Financial document processing** for AI analysis
-- **Compliance-safe AI integration** for RIAs and broker-dealers
+- **Mortgage/underwriting documents** processed for AI analysis
+- **Real estate/title documents** with buyer/seller PII removed
+- **Compliance-safe AI integration** for RIAs, broker-dealers, and lenders
 - **Client communication review** before sending to AI for drafting
+
+## Testing
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_regex_patterns.py -v
+
+# Run with timing
+pytest tests/ -v --tb=short
+```
+
+**Current:** 223 tests, ~3s runtime (session-scoped spaCy model load).
+
+## Performance
+
+| Metric | Observed | Notes |
+|--------|----------|-------|
+| Test suite | 223 tests in ~3s | spaCy model loaded once per session |
+| Short text (<100 words) | <500ms | Regex + Presidio on warm engine |
+| Long transcript (~500 words) | ~1-2s | spaCy NER is the bottleneck |
+| Cold start (Fly.io resume) | ~8-10s | spaCy en_core_web_lg model load |
+| Memory | ~1.2GB steady-state | en_core_web_lg (~560MB) + Presidio + overhead |
+| Docker image | ~1.0GB | Python 3.12 slim + spaCy model |
 
 ## Development
 
@@ -212,6 +286,9 @@ fly launch
 fly secrets set PW_REDACT_API_KEY=your-strong-random-key
 fly deploy
 ```
+
+**Note:** Use at least 2GB RAM. The spaCy `en_core_web_lg` model loads at ~560MB;
+1GB VMs will OOM during startup.
 
 ## Contributing
 
