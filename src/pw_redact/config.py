@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     spacy_model: str = "en_core_web_lg"
     environment: str = "development"
     max_request_size_mb: int = 1
+    rate_limit_rpm: int = 60
+    rate_limit_burst: int = 10
 
     model_config = {"env_prefix": "", "case_sensitive": False}
 

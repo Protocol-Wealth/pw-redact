@@ -243,13 +243,47 @@ pytest tests/test_regex_patterns.py -v
 pytest tests/ -v --tb=short
 ```
 
-**Current:** 223 tests, ~3s runtime (session-scoped spaCy model load).
+**Current:** 276 tests, ~3s runtime (session-scoped spaCy model load).
+
+## Security
+
+pw-redact includes built-in security hardening for AI pipeline protection:
+
+### Input Validation
+- Max payload: 1MB / 50,000 lines (rejects with 413)
+- Strips null bytes, ASCII control characters (preserves `\n` and `\t`)
+- Strips invisible Unicode (zero-width spaces, bidi overrides, BOM)
+- Detects and removes base64-encoded blocks >200 chars (could hide injected instructions)
+- Strips HTML tags and `<script>` elements
+- Strips markdown image references with external URLs (`![](http://...)`)
+- Normalizes excessive whitespace while preserving paragraph structure
+
+### Prompt Injection Detection
+- Scans for known injection phrases: "ignore previous instructions", "reveal your prompt", identity manipulation ("pretend you are"), fake delimiters (`<|im_start|>`, `[INST]`), encoded variants (leetspeak, spaced characters)
+- Returns a confidence score (0.0-1.0) and list of matched patterns
+- **Advisory only** — flags suspicious input but does NOT block it. Advisors may legitimately paste client emails containing unusual text. The caller (your application) decides policy.
+- Injection data is included in the `/v1/redact` response under a `security` key
+
+### Output Validation
+- Verifies no original PII values leaked into `sanitized_text`
+- Validates all placeholders match the `<TYPE_N>` format
+- Checks manifest structural integrity
+
+### Rate Limiting
+- In-memory token bucket per API key
+- Default: 60 requests/minute, 10 requests/second burst
+- Returns 429 with `Retry-After` header when exceeded
+- Configurable via `RATE_LIMIT_RPM` env var
+
+### Response Headers
+- `X-Request-ID` — UUID for request tracing
+- `X-Processing-Time-Ms` — Server-side processing time
 
 ## Performance
 
 | Metric | Observed | Notes |
 |--------|----------|-------|
-| Test suite | 223 tests in ~3s | spaCy model loaded once per session |
+| Test suite | 276 tests in ~3s | spaCy model loaded once per session |
 | Short text (<100 words) | <500ms | Regex + Presidio on warm engine |
 | Long transcript (~500 words) | ~1-2s | spaCy NER is the bottleneck |
 | Cold start (Fly.io resume) | ~8-10s | spaCy en_core_web_lg model load |
