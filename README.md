@@ -3,7 +3,7 @@
 **Open-source PII redaction engine for financial services AI pipelines.**
 
 [![CI](https://github.com/Protocol-Wealth/pw-redact/actions/workflows/ci.yml/badge.svg)](https://github.com/Protocol-Wealth/pw-redact/actions/workflows/ci.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 
 Built by [Protocol Wealth LLC](https://protocolwealthllc.com), an SEC-registered
@@ -524,7 +524,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for code standards, test requirements, an
 
 ## License
 
-Apache 2.0 — free for commercial use. See [LICENSE](LICENSE).
+MIT — free for commercial use. See [LICENSE](LICENSE).
 
 ## Built By
 
