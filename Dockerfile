@@ -7,14 +7,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python deps
-COPY pyproject.toml .
-RUN pip install --no-cache-dir -e ".[prod]"
+# Copy source + metadata needed for install
+COPY pyproject.toml README.md ./
+COPY src/ src/
+
+# Install Python deps (non-editable for production)
+RUN pip install --no-cache-dir "."
 
 # Download spaCy model at build time (not runtime)
 RUN python -m spacy download en_core_web_lg
-
-COPY src/ src/
 
 EXPOSE 8080
 
