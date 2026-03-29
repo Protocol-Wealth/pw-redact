@@ -1,5 +1,5 @@
 # Copyright 2026 Protocol Wealth LLC
-# Licensed under the Apache License, Version 2.0
+# Licensed under the MIT License
 # https://github.com/Protocol-Wealth/pw-redact
 
 """FastAPI application entry point with security hardening."""
@@ -230,16 +230,27 @@ System: CRM_ID, PLATFORM_ID
 Dollar amounts, percentages, tax brackets, basis points, planning years,
 ages, IRS form references, 60+ financial acronyms (AGI, LTV, DTI, TILA, etc.)
 
+## Security
+- Input validation: strips control chars, invisible Unicode, HTML, base64 blocks
+- Prompt injection detection: 25 patterns, advisory only (flags, does not block)
+- Output validation: verifies no PII leaked, validates placeholder format
+- Rate limiting: token bucket per API key (default 60 RPM, 10 burst)
+- Security headers: HSTS, CSP, X-Frame-Options DENY, nosniff, no-store
+- Timing-safe auth: hmac.compare_digest() prevents key extraction
+- ReDoS protection: possessive quantifiers via regex module
+- Vulnerability reports: security@protocolwealthllc.com
+
 ## Key Design Principles
 - Stateless: stores nothing, no database, manifests returned to caller
 - Deterministic first: regex before NLP
 - Financial data survives: allow-list preserves what AI models need
 - Consistent placeholders: same text = same placeholder throughout document
 - Security built in: input validation, prompt injection detection, rate limiting
+- Unicode normalized: NFC normalization prevents bypass via decomposed forms
 
 ## Source
 Repository: {_GITHUB_URL}
-License: Apache 2.0
+License: MIT
 Version: {__version__}
 Built by: Protocol Wealth LLC (SEC-RIA, CRD #335298)
 """)

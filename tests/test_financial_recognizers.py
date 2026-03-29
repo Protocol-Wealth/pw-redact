@@ -1,5 +1,5 @@
 # Copyright 2026 Protocol Wealth LLC
-# Licensed under the Apache License, Version 2.0
+# Licensed under the MIT License
 # https://github.com/Protocol-Wealth/pw-redact
 
 """Unit tests for Layer 3: custom financial Presidio recognizers."""

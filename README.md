@@ -401,13 +401,13 @@ pytest tests/test_security.py -v
 pytest tests/ -v --tb=short
 ```
 
-**Current:** 276 tests, ~3s runtime (session-scoped spaCy model load).
+**Current:** 297 tests, ~3.7s runtime (session-scoped spaCy model load).
 
 ## Performance
 
 | Metric | Observed | Notes |
 |--------|----------|-------|
-| Test suite | 276 tests in ~3s | spaCy model loaded once per session |
+| Test suite | 297 tests in ~3.7s | spaCy model loaded once per session |
 | Short text (<100 words) | <500ms | Regex + Presidio on warm engine |
 | Long transcript (~500 words) | ~1-2s | spaCy NER is the bottleneck |
 | Cold start (Fly.io resume) | ~8-10s | spaCy en_core_web_lg model load |

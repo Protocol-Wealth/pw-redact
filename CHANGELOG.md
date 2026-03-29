@@ -4,7 +4,7 @@ All notable changes to pw-redact will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [0.1.0] - 2026-03-28
+## [0.1.0] - 2026-03-29
 
 ### Added
 - Initial release: four-layer PII redaction engine (regex, Presidio NLP, financial recognizers, allow-list)
@@ -23,11 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Consistent placeholder generation (`<PERSON_1>`, `<US_SSN_1>`, etc.) with manifest for round-trip rehydration
 - 6 document contexts: `meeting_transcript`, `tax_return`, `financial_notes`, `mortgage`, `real_estate`, `general`
 - API key authentication (Bearer token, service-to-service)
-- 276 tests (regex patterns, financial recognizers, allow-list, security, integration)
+- 297 tests (regex patterns, financial recognizers, allow-list, security, API, integration)
 - Docker and Fly.io deployment support
 - Sample test fixtures: meeting transcript, tax notes, meeting notes, mortgage pre-qualification
 - Request tracing headers (X-Request-ID, X-Processing-Time-Ms)
 - SECURITY.md with vulnerability disclosure policy (security@protocolwealthllc.com)
 - GitHub CI workflow (lint + test), issue templates, PR template
 - Documentation: architecture, deployment guide, allow-list customization guide
-- Apache 2.0 license
+- Landing page (GET /), llms.txt, robots.txt, security.txt (RFC 9116)
+- MIT license

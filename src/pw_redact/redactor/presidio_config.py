@@ -1,5 +1,5 @@
 # Copyright 2026 Protocol Wealth LLC
-# Licensed under the Apache License, Version 2.0
+# Licensed under the MIT License
 # https://github.com/Protocol-Wealth/pw-redact
 
 """Layer 2: Presidio NLP analyzer configuration with spaCy backend."""

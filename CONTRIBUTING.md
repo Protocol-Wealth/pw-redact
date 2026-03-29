@@ -11,10 +11,10 @@ community are welcome.
 - Python 3.12+, type hints on all public functions
 - Ruff for linting and formatting (`ruff check src/`)
 - Every regex pattern must have at least 3 test cases (match + non-match + extracted text)
-- Apache 2.0 license header on every `.py` file:
+- MIT license header on every `.py` file:
   ```python
   # Copyright 2026 Protocol Wealth LLC
-  # Licensed under the Apache License, Version 2.0
+  # Licensed under the MIT License
   # https://github.com/Protocol-Wealth/pw-redact
   ```
 

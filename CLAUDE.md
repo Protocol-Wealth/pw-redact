@@ -1,8 +1,7 @@
 # CLAUDE.md — pw-redact
 
-> **Document hierarchy:** AGENTS.md (v7.4.0) → ria.md (v2.3) → this file
 > **Repository:** pw-redact (PUBLIC — open source)
-> **License:** Apache 2.0
+> **License:** MIT
 > **GitHub:** github.com/Protocol-Wealth/pw-redact
 > **Purpose:** Open-source PII redaction engine for financial services AI pipelines
 > **Stack:** Python 3.12 · FastAPI · Presidio · spaCy · Fly.io
@@ -42,7 +41,7 @@
 ### License header (every .py file):
 ```python
 # Copyright 2026 Protocol Wealth LLC
-# Licensed under the Apache License, Version 2.0
+# Licensed under the MIT License
 # https://github.com/Protocol-Wealth/pw-redact
 ```
 
