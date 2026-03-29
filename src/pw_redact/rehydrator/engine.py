@@ -41,9 +41,7 @@ class PWRehydrator:
             raise ValueError("manifest.placeholders must be a list")
 
         if len(placeholders) > MAX_PLACEHOLDERS:
-            raise ValueError(
-                f"manifest contains too many placeholders ({len(placeholders)})"
-            )
+            raise ValueError(f"manifest contains too many placeholders ({len(placeholders)})")
 
         result = text
         for entry in placeholders:
@@ -55,9 +53,7 @@ class PWRehydrator:
 
             # Validate placeholder format
             if not _VALID_PLACEHOLDER.fullmatch(placeholder):
-                raise ValueError(
-                    f"invalid placeholder format: {placeholder!r}"
-                )
+                raise ValueError(f"invalid placeholder format: {placeholder!r}")
 
             # Cap original value length
             if len(original) > MAX_ORIGINAL_LENGTH:

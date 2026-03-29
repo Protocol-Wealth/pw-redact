@@ -83,9 +83,7 @@ async def add_request_context(request: Request, call_next):
     # Security headers
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Strict-Transport-Security"] = (
-        "max-age=31536000; includeSubDomains"
-    )
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; style-src 'unsafe-inline'; frame-ancestors 'none'"
     )
@@ -98,7 +96,8 @@ async def add_request_context(request: Request, call_next):
 # ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 async def landing_page() -> HTMLResponse:
-    return HTMLResponse(content=f"""<!DOCTYPE html>
+    return HTMLResponse(
+        content=f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -156,8 +155,9 @@ async def landing_page() -> HTMLResponse:
   </table>
 
   <h2>Quick Example</h2>
-  <pre>curl -X POST {_GITHUB_URL.replace('github.com/Protocol-Wealth/pw-redact',
-  'pw-redact.fly.dev')}/v1/redact \\
+  <pre>curl -X POST {
+            _GITHUB_URL.replace("github.com/Protocol-Wealth/pw-redact", "pw-redact.fly.dev")
+        }/v1/redact \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{{"text": "John Smith SSN 123-45-6789. AGI $425,000.", "context": "general"}}'</pre>
@@ -183,12 +183,14 @@ async def landing_page() -> HTMLResponse:
     security@protocolwealthllc.com</a></p>
   </footer>
 </body>
-</html>""")
+</html>"""
+    )
 
 
 @app.get("/llms.txt", response_class=PlainTextResponse)
 async def llms_txt() -> PlainTextResponse:
-    return PlainTextResponse(content=f"""# pw-redact
+    return PlainTextResponse(
+        content=f"""# pw-redact
 
 > Open-source PII redaction engine for financial services AI pipelines
 
@@ -253,12 +255,14 @@ Repository: {_GITHUB_URL}
 License: MIT
 Version: {__version__}
 Built by: Protocol Wealth LLC (SEC-RIA, CRD #335298)
-""")
+"""
+    )
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots_txt() -> PlainTextResponse:
-    return PlainTextResponse(content="""# pw-redact — PII redaction API
+    return PlainTextResponse(
+        content="""# pw-redact — PII redaction API
 # Allow indexing of public metadata; block API endpoints
 
 User-agent: *
@@ -272,17 +276,20 @@ Disallow: /v1/rehydrate
 Disallow: /v1/detect
 Disallow: /docs
 Disallow: /openapi.json
-""")
+"""
+    )
 
 
 @app.get("/.well-known/security.txt", response_class=PlainTextResponse)
 async def security_txt() -> PlainTextResponse:
-    return PlainTextResponse(content=f"""Contact: mailto:security@protocolwealthllc.com
+    return PlainTextResponse(
+        content=f"""Contact: mailto:security@protocolwealthllc.com
 Preferred-Languages: en
 Canonical: https://pw-redact.fly.dev/.well-known/security.txt
 Policy: {_GITHUB_URL}/blob/main/SECURITY.md
 Expires: 2027-03-28T00:00:00.000Z
-""")
+"""
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -335,25 +342,28 @@ async def redact(
     manifest_dict = result.manifest.to_dict()
     output_check = validate_output(result.sanitized_text, manifest_dict)
 
-    return JSONResponse(content={
-        "sanitized_text": result.sanitized_text,
-        "manifest": manifest_dict,
-        "security": {
-            "input_sanitized": len(validation.actions) > 0,
-            "sanitization_actions": validation.actions,
-            "injection_detected": injection.is_suspicious,
-            "injection_score": injection.injection_score,
-            "injection_patterns": injection.detected_patterns,
-            "output_valid": output_check.is_valid,
-            "output_warnings": output_check.warnings,
-            "request_id": request_id,
-        },
-    })
+    return JSONResponse(
+        content={
+            "sanitized_text": result.sanitized_text,
+            "manifest": manifest_dict,
+            "security": {
+                "input_sanitized": len(validation.actions) > 0,
+                "sanitization_actions": validation.actions,
+                "injection_detected": injection.is_suspicious,
+                "injection_score": injection.injection_score,
+                "injection_patterns": injection.detected_patterns,
+                "output_valid": output_check.is_valid,
+                "output_warnings": output_check.warnings,
+                "request_id": request_id,
+            },
+        }
+    )
 
 
 @app.post("/v1/rehydrate")
 async def rehydrate(
-    req: RehydrateRequest, _: None = Depends(verify_api_key),
+    req: RehydrateRequest,
+    _: None = Depends(verify_api_key),
 ) -> dict:
     restored = _rehydrator.rehydrate(req.text, req.manifest)
     return {"rehydrated_text": restored}
@@ -361,7 +371,8 @@ async def rehydrate(
 
 @app.post("/v1/detect")
 async def detect(
-    req: DetectRequest, _: None = Depends(verify_api_key),
+    req: DetectRequest,
+    _: None = Depends(verify_api_key),
 ) -> dict:
     redactor = get_redactor()
     entities = redactor.detect(req.text, context=req.context)

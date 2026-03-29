@@ -24,33 +24,64 @@ _TYPE_MAP: dict[str, str] = {
 # Entity types to request from Presidio per document context
 _CONTEXT_ENTITIES: dict[str, list[str]] = {
     "meeting_transcript": [
-        "PERSON", "LOCATION", "PHONE_NUMBER", "EMAIL_ADDRESS",
-        "US_SSN", "CREDIT_CARD", "NRP",
-        "ACCOUNT_REF", "POLICY_NUMBER",
+        "PERSON",
+        "LOCATION",
+        "PHONE_NUMBER",
+        "EMAIL_ADDRESS",
+        "US_SSN",
+        "CREDIT_CARD",
+        "NRP",
+        "ACCOUNT_REF",
+        "POLICY_NUMBER",
     ],
     "tax_return": [
-        "PERSON", "LOCATION", "PHONE_NUMBER", "EMAIL_ADDRESS",
-        "US_SSN", "CREDIT_CARD",
+        "PERSON",
+        "LOCATION",
+        "PHONE_NUMBER",
+        "EMAIL_ADDRESS",
+        "US_SSN",
+        "CREDIT_CARD",
         "ACCOUNT_REF",
     ],
     "financial_notes": [
-        "PERSON", "LOCATION", "PHONE_NUMBER", "EMAIL_ADDRESS",
-        "US_SSN", "CREDIT_CARD",
-        "CUSIP", "ACCOUNT_REF", "POLICY_NUMBER",
+        "PERSON",
+        "LOCATION",
+        "PHONE_NUMBER",
+        "EMAIL_ADDRESS",
+        "US_SSN",
+        "CREDIT_CARD",
+        "CUSIP",
+        "ACCOUNT_REF",
+        "POLICY_NUMBER",
     ],
     "general": [
-        "PERSON", "LOCATION", "PHONE_NUMBER", "EMAIL_ADDRESS",
-        "US_SSN", "CREDIT_CARD",
+        "PERSON",
+        "LOCATION",
+        "PHONE_NUMBER",
+        "EMAIL_ADDRESS",
+        "US_SSN",
+        "CREDIT_CARD",
     ],
     "mortgage": [
-        "PERSON", "LOCATION", "PHONE_NUMBER", "EMAIL_ADDRESS",
-        "US_SSN", "CREDIT_CARD", "NRP",
-        "ACCOUNT_REF", "POLICY_NUMBER",
+        "PERSON",
+        "LOCATION",
+        "PHONE_NUMBER",
+        "EMAIL_ADDRESS",
+        "US_SSN",
+        "CREDIT_CARD",
+        "NRP",
+        "ACCOUNT_REF",
+        "POLICY_NUMBER",
     ],
     "real_estate": [
-        "PERSON", "LOCATION", "PHONE_NUMBER", "EMAIL_ADDRESS",
-        "US_SSN", "CREDIT_CARD",
-        "ACCOUNT_REF", "POLICY_NUMBER",
+        "PERSON",
+        "LOCATION",
+        "PHONE_NUMBER",
+        "EMAIL_ADDRESS",
+        "US_SSN",
+        "CREDIT_CARD",
+        "ACCOUNT_REF",
+        "POLICY_NUMBER",
     ],
 }
 
@@ -130,11 +161,7 @@ class PWRedactor:
         merged = _merge_entities(regex_entities, nlp_entities)
 
         # Step 4: Apply allow-list filter (Layer 4)
-        filtered = [
-            e
-            for e in merged
-            if not any(p.fullmatch(e.text) for p in self._allow_patterns)
-        ]
+        filtered = [e for e in merged if not any(p.fullmatch(e.text) for p in self._allow_patterns)]
 
         # Step 5: Generate placeholders and build manifest entries
         filtered.sort(key=lambda e: e.start)
@@ -144,9 +171,7 @@ class PWRedactor:
             if entity.text in placeholder_map:
                 placeholder = placeholder_map[entity.text]
             else:
-                type_counters[entity.entity_type] = (
-                    type_counters.get(entity.entity_type, 0) + 1
-                )
+                type_counters[entity.entity_type] = type_counters.get(entity.entity_type, 0) + 1
                 placeholder = f"<{entity.entity_type}_{type_counters[entity.entity_type]}>"
                 placeholder_map[entity.text] = placeholder
 
@@ -197,11 +222,7 @@ class PWRedactor:
             for r in presidio_results
         ]
         merged = _merge_entities(regex_entities, nlp_entities)
-        return [
-            e
-            for e in merged
-            if not any(p.fullmatch(e.text) for p in self._allow_patterns)
-        ]
+        return [e for e in merged if not any(p.fullmatch(e.text) for p in self._allow_patterns)]
 
 
 def _merge_entities(

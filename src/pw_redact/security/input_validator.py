@@ -19,35 +19,31 @@ _CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 # Invisible / zero-width Unicode characters and bidi overrides
 _INVISIBLE_UNICODE = re.compile(
     r"["
-    r"\u00ad"          # soft hyphen
-    r"\u034f"          # combining grapheme joiner
-    r"\u061c"          # arabic letter mark
-    r"\u115f\u1160"    # hangul fillers
-    r"\u17b4\u17b5"    # khmer vowel inherent
-    r"\u180e"          # mongolian vowel separator
-    r"\u200b-\u200f"   # zero-width space, ZWNJ, ZWJ, LRM, RLM
-    r"\u202a-\u202e"   # bidi embedding/override
-    r"\u2060-\u2064"   # word joiner, invisible times/separator/plus
-    r"\u2066-\u2069"   # bidi isolates
-    r"\u206a-\u206f"   # deprecated formatting
-    r"\ufeff"          # BOM / zero-width no-break space
-    r"\ufff9-\ufffb"   # interlinear annotations
+    r"\u00ad"  # soft hyphen
+    r"\u034f"  # combining grapheme joiner
+    r"\u061c"  # arabic letter mark
+    r"\u115f\u1160"  # hangul fillers
+    r"\u17b4\u17b5"  # khmer vowel inherent
+    r"\u180e"  # mongolian vowel separator
+    r"\u200b-\u200f"  # zero-width space, ZWNJ, ZWJ, LRM, RLM
+    r"\u202a-\u202e"  # bidi embedding/override
+    r"\u2060-\u2064"  # word joiner, invisible times/separator/plus
+    r"\u2066-\u2069"  # bidi isolates
+    r"\u206a-\u206f"  # deprecated formatting
+    r"\ufeff"  # BOM / zero-width no-break space
+    r"\ufff9-\ufffb"  # interlinear annotations
     r"]+"
 )
 
 # Base64-encoded blocks (could hide prompt injections)
-_BASE64_BLOCK = re.compile(
-    r"(?<!\w)[A-Za-z0-9+/]{200,}={0,2}(?!\w)"
-)
+_BASE64_BLOCK = re.compile(r"(?<!\w)[A-Za-z0-9+/]{200,}={0,2}(?!\w)")
 
 # HTML tags and script elements
 _HTML_SCRIPT = re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL)
 _HTML_TAGS = re.compile(r"</?[a-zA-Z][^>]*>")
 
 # Markdown image references with external URLs
-_MD_EXTERNAL_IMAGE = re.compile(
-    r"!\[[^\]]*\]\(https?://[^)]+\)"
-)
+_MD_EXTERNAL_IMAGE = re.compile(r"!\[[^\]]*\]\(https?://[^)]+\)")
 
 # Excessive whitespace (3+ consecutive blank lines → 2)
 _EXCESSIVE_BLANKS = re.compile(r"\n{4,}")

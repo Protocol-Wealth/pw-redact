@@ -82,9 +82,6 @@ class RateLimiter:
 
     def _cleanup(self, now: float) -> None:
         """Remove buckets unused for > STALE_AGE seconds."""
-        stale = [
-            k for k, v in self._buckets.items()
-            if now - v.last_refill > STALE_AGE
-        ]
+        stale = [k for k, v in self._buckets.items() if now - v.last_refill > STALE_AGE]
         for k in stale:
             del self._buckets[k]

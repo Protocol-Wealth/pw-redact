@@ -36,64 +36,69 @@ def _p(pattern: str, label: str, weight: float, flags: int = re.IGNORECASE) -> N
 
 
 # -- Instruction override attempts ------------------------------------------
-_p(r"ignore\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+instructions?",
-   "ignore_previous_instructions", 0.95)
-_p(r"ignore\s+your\s+instructions?",
-   "ignore_your_instructions", 0.95)
-_p(r"disregard\s+(?:all\s+)?(?:previous|prior|above|your)\s+(?:instructions?|rules?|guidelines?)",
-   "disregard_instructions", 0.90)
-_p(r"(?:forget|drop|dismiss)\s+(?:all\s+)?(?:previous|prior|your)\s+(?:instructions?|context|rules?)",
-   "forget_instructions", 0.90)
-_p(r"do\s+not\s+follow\s+(?:any\s+)?(?:previous|prior|your)\s+(?:instructions?|rules?)",
-   "do_not_follow", 0.90)
+_p(
+    r"ignore\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+instructions?",
+    "ignore_previous_instructions",
+    0.95,
+)
+_p(r"ignore\s+your\s+instructions?", "ignore_your_instructions", 0.95)
+_p(
+    r"disregard\s+(?:all\s+)?(?:previous|prior|above|your)\s+(?:instructions?|rules?|guidelines?)",
+    "disregard_instructions",
+    0.90,
+)
+_p(
+    r"(?:forget|drop|dismiss)\s+(?:all\s+)?(?:previous|prior|your)\s+(?:instructions?|context|rules?)",
+    "forget_instructions",
+    0.90,
+)
+_p(
+    r"do\s+not\s+follow\s+(?:any\s+)?(?:previous|prior|your)\s+(?:instructions?|rules?)",
+    "do_not_follow",
+    0.90,
+)
 
 # -- Identity manipulation -------------------------------------------------
-_p(r"(?:act|behave|respond)\s+as\s+if\s+you",
-   "act_as_if", 0.80)
-_p(r"(?:pretend|imagine|suppose)\s+(?:that\s+)?you\s+are",
-   "pretend_you_are", 0.80)
-_p(r"you\s+are\s+now\s+(?:a\s+)?(?:new|different|unrestricted)",
-   "you_are_now", 0.85)
-_p(r"\bDAN\b",
-   "dan_jailbreak", 0.60)
-_p(r"do\s+anything\s+now",
-   "do_anything_now", 0.85)
+_p(r"(?:act|behave|respond)\s+as\s+if\s+you", "act_as_if", 0.80)
+_p(r"(?:pretend|imagine|suppose)\s+(?:that\s+)?you\s+are", "pretend_you_are", 0.80)
+_p(r"you\s+are\s+now\s+(?:a\s+)?(?:new|different|unrestricted)", "you_are_now", 0.85)
+_p(r"\bDAN\b", "dan_jailbreak", 0.60)
+_p(r"do\s+anything\s+now", "do_anything_now", 0.85)
 
 # -- Prompt extraction attempts ---------------------------------------------
-_p(r"(?:reveal|show|display|print|output|repeat)\s+(?:your|the|my)\s+(?:system\s+)?(?:prompt|instructions?|rules?)",
-   "reveal_prompt", 0.85)
-_p(r"what\s+(?:are|were)\s+your\s+(?:original\s+)?(?:instructions?|rules?|guidelines?)",
-   "extract_instructions", 0.80)
-_p(r"(?:show|give|tell)\s+me\s+your\s+(?:system\s+)?(?:prompt|instructions?|rules?)",
-   "show_me_instructions", 0.85)
+_p(
+    r"(?:reveal|show|display|print|output|repeat)\s+(?:your|the|my)\s+(?:system\s+)?(?:prompt|instructions?|rules?)",
+    "reveal_prompt",
+    0.85,
+)
+_p(
+    r"what\s+(?:are|were)\s+your\s+(?:original\s+)?(?:instructions?|rules?|guidelines?)",
+    "extract_instructions",
+    0.80,
+)
+_p(
+    r"(?:show|give|tell)\s+me\s+your\s+(?:system\s+)?(?:prompt|instructions?|rules?)",
+    "show_me_instructions",
+    0.85,
+)
 
 # -- Keyword markers --------------------------------------------------------
-_p(r"\b(?:system\s*prompt|override|bypass|jailbreak)\b",
-   "injection_keyword", 0.50)
-_p(r"\b(?:injection|exploit|payload)\s*(?:test|attempt|attack)\b",
-   "injection_test_keyword", 0.40)
+_p(r"\b(?:system\s*prompt|override|bypass|jailbreak)\b", "injection_keyword", 0.50)
+_p(r"\b(?:injection|exploit|payload)\s*(?:test|attempt|attack)\b", "injection_test_keyword", 0.40)
 
 # -- Encoded / obfuscated variants -----------------------------------------
-_p(r"i\s+g\s+n\s+o\s+r\s+e",
-   "spaced_ignore", 0.75)
-_p(r"(?:1gn0r3|ign0re|1gnore)\s+(?:previous|prior|your|all)",
-   "leetspeak_ignore", 0.80)
-_p(r"(?:s\s*y\s*s\s*t\s*e\s*m|p\s*r\s*o\s*m\s*p\s*t)",
-   "spaced_system_prompt", 0.65)
+_p(r"i\s+g\s+n\s+o\s+r\s+e", "spaced_ignore", 0.75)
+_p(r"(?:1gn0r3|ign0re|1gnore)\s+(?:previous|prior|your|all)", "leetspeak_ignore", 0.80)
+_p(r"(?:s\s*y\s*s\s*t\s*e\s*m|p\s*r\s*o\s*m\s*p\s*t)", "spaced_system_prompt", 0.65)
 
 # -- Role-play / persona injection -----------------------------------------
-_p(r"new\s+(?:session|conversation|chat|context)\s*[:\-]",
-   "new_session_marker", 0.70)
-_p(r"(?:###|===)\s*(?:system|instruction|new\s+prompt)",
-   "fake_system_delimiter", 0.85)
-_p(r"\[(?:system|instruction|INST)\]",
-   "fake_system_tag", 0.80)
+_p(r"new\s+(?:session|conversation|chat|context)\s*[:\-]", "new_session_marker", 0.70)
+_p(r"(?:###|===)\s*(?:system|instruction|new\s+prompt)", "fake_system_delimiter", 0.85)
+_p(r"\[(?:system|instruction|INST)\]", "fake_system_tag", 0.80)
 
 # -- Delimiter / context manipulation --------------------------------------
-_p(r"<\|(?:im_start|im_end|system|endoftext)\|>",
-   "fake_special_token", 0.90)
-_p(r"```\s*system\b",
-   "code_block_system", 0.70)
+_p(r"<\|(?:im_start|im_end|system|endoftext)\|>", "fake_special_token", 0.90)
+_p(r"```\s*system\b", "code_block_system", 0.70)
 
 
 def detect_injection(text: str) -> InjectionResult:
