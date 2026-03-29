@@ -400,6 +400,47 @@ class TestRateLimiter:
         allowed, _ = limiter.check("key")
         assert allowed
 
+    def test_max_buckets_rejects_new_keys(self):
+        from pw_redact.security.rate_limiter import MAX_BUCKETS
+
+        limiter = RateLimiter(rpm=60, burst=5)
+        # Fill to capacity
+        for i in range(MAX_BUCKETS):
+            limiter._buckets[f"key_{i}"] = limiter._buckets.get(
+                f"key_{i}",
+                type(list(limiter._buckets.values())[0] if limiter._buckets else None)
+            ) if limiter._buckets else None
+        # Manually fill buckets dict
+        import time as _time
+        from pw_redact.security.rate_limiter import _Bucket
+
+        limiter._buckets.clear()
+        now = _time.monotonic()
+        for i in range(MAX_BUCKETS):
+            limiter._buckets[f"k{i}"] = _Bucket(
+                tokens=5.0, last_refill=now, rpm=60, burst=5,
+            )
+        # New key should be rejected
+        allowed, retry = limiter.check("new_key_over_limit")
+        assert not allowed
+        assert retry > 0
+
+    def test_stale_buckets_cleaned(self):
+        import time as _time
+        from pw_redact.security.rate_limiter import STALE_AGE, _Bucket
+
+        limiter = RateLimiter(rpm=60, burst=5)
+        old_time = _time.monotonic() - STALE_AGE - 10
+        limiter._buckets["stale_key"] = _Bucket(
+            tokens=5.0, last_refill=old_time, rpm=60, burst=5,
+        )
+        limiter._buckets["fresh_key"] = _Bucket(
+            tokens=5.0, last_refill=_time.monotonic(), rpm=60, burst=5,
+        )
+        limiter._cleanup(_time.monotonic())
+        assert "stale_key" not in limiter._buckets
+        assert "fresh_key" in limiter._buckets
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # INTEGRATION: security pipeline on sample fixtures

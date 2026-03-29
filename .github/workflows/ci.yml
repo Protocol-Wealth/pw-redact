@@ -44,7 +44,7 @@ jobs:
         run: |
           pytest tests/ -v --tb=short \
             --cov=pw_redact --cov-report=term-missing --cov-report=xml \
-            --cov-fail-under=80
+            --cov-fail-under=85
 
       - name: Upload coverage
         if: always()
