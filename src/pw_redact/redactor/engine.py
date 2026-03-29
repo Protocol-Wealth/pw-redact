@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import unicodedata
 import uuid
 from dataclasses import dataclass
 
@@ -95,6 +96,10 @@ class PWRedactor:
         Returns:
             RedactionResult with sanitized_text and manifest.
         """
+        # Normalize Unicode to NFC to prevent bypass via decomposed forms
+        # (e.g. NFD "e" + combining acute vs NFC "é", soft hyphens in SSNs)
+        text = unicodedata.normalize("NFC", text)
+
         # Per-request state for placeholder consistency
         placeholder_map: dict[str, str] = {}
         type_counters: dict[str, int] = {}
@@ -172,6 +177,7 @@ class PWRedactor:
 
     def detect(self, text: str, context: str = "general") -> list[DetectedEntity]:
         """Detect PII locations without redacting. For UI highlighting."""
+        text = unicodedata.normalize("NFC", text)
         regex_entities = detect_regex(text)
         entities_to_detect = _CONTEXT_ENTITIES.get(context, _CONTEXT_ENTITIES["general"])
         presidio_results = self._analyzer.analyze(

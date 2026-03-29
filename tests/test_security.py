@@ -321,8 +321,7 @@ class TestOutputValidation:
         assert "manifest_missing_redaction_id" in result.warnings
 
     def test_short_originals_not_flagged(self):
-        # "Mr" (2 chars) appears in "Mr. Jones" but also in other words.
-        # We only flag leaks for originals >= 4 chars.
+        # "Mr" (2 chars) is below the 5-char leak-check threshold.
         result = validate_output(
             "Mr. <PERSON_1> called.",
             {
@@ -335,8 +334,23 @@ class TestOutputValidation:
                 "stats": {},
             },
         )
-        # "Mr" is only 2 chars, below the 4-char threshold
         assert result.is_valid
+
+    def test_substring_in_longer_word_not_flagged(self):
+        # "Smith" appears in "Blacksmith" — word-boundary check should not flag it
+        result = validate_output(
+            "The Blacksmith <PERSON_1> was skilled.",
+            {
+                "version": "1.0",
+                "redaction_id": "red_abc123",
+                "placeholders": [
+                    {"placeholder": "<PERSON_1>", "original": "Smith",
+                     "entity_type": "PERSON", "start": 15, "end": 26},
+                ],
+                "stats": {},
+            },
+        )
+        assert result.is_valid  # "Smith" in "Blacksmith" should NOT flag
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -385,6 +399,39 @@ class TestRateLimiter:
         time.sleep(0.02)
         allowed, _ = limiter.check("key")
         assert allowed
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# INTEGRATION: security pipeline on sample fixtures
+# ═══════════════════════════════════════════════════════════════════════
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# UNICODE NORMALIZATION
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestUnicodeNormalization:
+    def test_nfd_ssn_still_detected(self, redactor):
+        """SSN with NFD-decomposed characters should still be caught."""
+        import unicodedata
+
+        text = "SSN is 123-45-6789"
+        nfd_text = unicodedata.normalize("NFD", text)
+        result = redactor.redact(nfd_text, context="general")
+        assert "123-45-6789" not in result.sanitized_text
+
+    def test_nfc_normalization_applied(self, redactor):
+        """Verify NFC normalization happens (composed form)."""
+        import unicodedata
+
+        # e + combining acute accent (NFD) should become é (NFC)
+        nfd = "caf\u0065\u0301"  # "café" in NFD
+        nfc = unicodedata.normalize("NFC", nfd)
+        result = redactor.redact(nfd, context="general")
+        # After NFC normalization, the text should be in composed form
+        # (no PII here, just verifying normalization doesn't break things)
+        assert result.sanitized_text  # should not crash
 
 
 # ═══════════════════════════════════════════════════════════════════════

@@ -54,11 +54,23 @@ app = FastAPI(
 )
 
 
+# Maximum request body size (reject before FastAPI/Pydantic parses)
+_MAX_BODY_BYTES = 2 * 1024 * 1024  # 2 MB (generous headroom over 1 MB text limit)
+
+
 # ---------------------------------------------------------------------------
-# Middleware: request ID + timing + security headers
+# Middleware: content-length guard + request ID + timing + security headers
 # ---------------------------------------------------------------------------
 @app.middleware("http")
 async def add_request_context(request: Request, call_next):
+    # Reject oversized bodies early (before buffering the full payload)
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > _MAX_BODY_BYTES:
+        return JSONResponse(
+            status_code=413,
+            content={"detail": "Payload too large"},
+        )
+
     request_id = f"req_{uuid.uuid4().hex[:12]}"
     request.state.request_id = request_id
     start = time.monotonic()

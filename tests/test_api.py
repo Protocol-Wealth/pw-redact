@@ -238,6 +238,34 @@ async def test_detect_returns_entities(transport):
     assert "score" in ssn
 
 
+# ── Content-Length guard ──────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_oversized_content_length_rejected(transport):
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        resp = await c.post(
+            "/v1/redact",
+            json={"text": "small", "context": "general"},
+            headers={**VALID_AUTH, "content-length": "99999999"},
+        )
+    assert resp.status_code == 413
+
+
+# ── Security headers ─────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_security_headers_present(transport):
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        resp = await c.get("/v1/health")
+    assert resp.headers["x-content-type-options"] == "nosniff"
+    assert resp.headers["x-frame-options"] == "DENY"
+    assert "max-age=" in resp.headers["strict-transport-security"]
+    assert "frame-ancestors" in resp.headers["content-security-policy"]
+    assert resp.headers["cache-control"] == "no-store"
+
+
 # ── Rate limiting (via tight limiter swap) ────────────────────────
 
 
