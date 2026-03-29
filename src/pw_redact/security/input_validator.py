@@ -78,14 +78,14 @@ def validate_input(text: str) -> ValidationResult:
         return ValidationResult(
             text=text,
             is_valid=False,
-            error=f"Input exceeds {MAX_INPUT_BYTES} bytes",
+            error="Input is too large",
         )
 
     if text.count("\n") >= MAX_LINE_COUNT:
         return ValidationResult(
             text=text,
             is_valid=False,
-            error=f"Input exceeds {MAX_LINE_COUNT} lines",
+            error="Input has too many lines",
         )
 
     cleaned = text

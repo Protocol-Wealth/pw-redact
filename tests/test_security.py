@@ -39,13 +39,13 @@ class TestInputValidation:
         huge = "x" * (MAX_INPUT_BYTES + 1)
         result = validate_input(huge)
         assert not result.is_valid
-        assert "exceeds" in result.error
+        assert "too large" in result.error
 
     def test_too_many_lines_rejected(self):
         many_lines = "\n".join(["line"] * (MAX_LINE_COUNT + 1))
         result = validate_input(many_lines)
         assert not result.is_valid
-        assert "lines" in result.error
+        assert "too many lines" in result.error
 
     def test_null_bytes_stripped(self):
         result = validate_input("hello\x00world")

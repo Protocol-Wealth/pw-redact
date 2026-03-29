@@ -55,7 +55,7 @@ app = FastAPI(
 
 
 # ---------------------------------------------------------------------------
-# Middleware: request ID + timing headers
+# Middleware: request ID + timing + security headers
 # ---------------------------------------------------------------------------
 @app.middleware("http")
 async def add_request_context(request: Request, call_next):
@@ -68,6 +68,16 @@ async def add_request_context(request: Request, call_next):
     elapsed_ms = round((time.monotonic() - start) * 1000, 1)
     response.headers["X-Request-ID"] = request_id
     response.headers["X-Processing-Time-Ms"] = str(elapsed_ms)
+    # Security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains"
+    )
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; style-src 'unsafe-inline'; frame-ancestors 'none'"
+    )
+    response.headers["Cache-Control"] = "no-store"
     return response
 
 
@@ -272,9 +282,10 @@ async def redact(
 ) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
 
-    # Rate limiting
+    # Rate limiting — key by auth header (not context, which is user-controlled)
     assert _rate_limiter is not None
-    allowed, retry_after = _rate_limiter.check(req.context)
+    rate_key = request.headers.get("authorization", "anon")
+    allowed, retry_after = _rate_limiter.check(rate_key)
     if not allowed:
         return JSONResponse(
             status_code=429,

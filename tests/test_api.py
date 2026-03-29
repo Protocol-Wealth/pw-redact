@@ -265,3 +265,26 @@ async def test_rate_limit_429(transport):
         assert resp.json()["detail"] == "Rate limit exceeded"
     finally:
         main_module._rate_limiter = original
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_not_bypassed_by_context(transport):
+    """Switching context should NOT bypass rate limiting (keyed by auth header)."""
+    original = main_module._rate_limiter
+    main_module._rate_limiter = RateLimiter(rpm=60, burst=1)
+    try:
+        async with AsyncClient(transport=transport, base_url="http://test") as c:
+            await c.post(
+                "/v1/redact",
+                json={"text": "test", "context": "general"},
+                headers=VALID_AUTH,
+            )
+            # Different context, same auth key — should still be rate limited
+            resp = await c.post(
+                "/v1/redact",
+                json={"text": "test", "context": "mortgage"},
+                headers=VALID_AUTH,
+            )
+        assert resp.status_code == 429
+    finally:
+        main_module._rate_limiter = original

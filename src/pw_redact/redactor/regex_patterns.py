@@ -6,8 +6,9 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
+
+import regex as re  # Use 'regex' module for possessive quantifiers (ReDoS protection)
 
 
 @dataclass(frozen=True)
@@ -137,10 +138,10 @@ PATTERN_DEFS: dict[str, _PatternDef] = {
     ),
     "STREET_ADDRESS": _PatternDef(
         regex=(
-            r"(?i)\b\d{1,5}\s+(?:[A-Za-z]+\s+){1,3}"
+            r"(?i)\b\d{1,5}\s++(?:[A-Za-z]++\s++){1,3}"  # possessive ++ prevents ReDoS
             r"(?:St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Ln|Lane|"
             r"Rd|Road|Ct|Court|Way|Pl|Place|Cir|Circle)"
-            r"\.?\b(?:\s*(?:#|Ste|Suite|Apt|Unit)\s*\w+)?"
+            r"\.?\b(?:\s*+(?:#|Ste|Suite|Apt|Unit)\s*+\w++)?"
         ),
         score=0.70,
     ),
@@ -176,9 +177,9 @@ PATTERN_DEFS: dict[str, _PatternDef] = {
     ),
     "PARCEL_NUMBER": _PatternDef(
         regex=(
-            r"(?i)(?:APN|parcel|tax\s*(?:parcel|id|lot)|property\s*(?:index|id|PIN)"
-            r"|assessor)\s*(?:(?:#|no\.?|number)\s*)?(?:[#:=]\s*)?"
-            r"([A-Z0-9][-A-Z0-9./]{4,24})\b"
+            r"(?i)(?:APN|parcel|tax\s*+(?:parcel|id|lot)|property\s*+(?:index|id|PIN)"
+            r"|assessor)\s*+(?:(?:#|no\.?|number)\s*+)?(?:[#:=]\s*+)?"
+            r"([A-Z0-9][-A-Z0-9./]{4,24}+)\b"
         ),
         score=0.80,
         group=1,

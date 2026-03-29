@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0
 # https://github.com/Protocol-Wealth/pw-redact
 
-"""In-memory token bucket rate limiter."""
+"""In-memory token bucket rate limiter with stale-bucket cleanup."""
 
 from __future__ import annotations
 
@@ -10,6 +10,10 @@ import time
 from dataclasses import dataclass
 
 from ..config import settings
+
+MAX_BUCKETS = 10_000
+CLEANUP_INTERVAL = 300.0  # 5 minutes
+STALE_AGE = 1800.0  # 30 minutes
 
 
 @dataclass
@@ -25,7 +29,6 @@ class _Bucket:
         """Try to consume a token. Returns (allowed, retry_after_seconds)."""
         now = time.monotonic()
         elapsed = now - self.last_refill
-        # Refill at rpm/60 tokens per second
         refill_rate = self.rpm / 60.0
         self.tokens = min(self.burst, self.tokens + elapsed * refill_rate)
         self.last_refill = now
@@ -34,7 +37,6 @@ class _Bucket:
             self.tokens -= 1.0
             return True, 0.0
 
-        # How long until 1 token is available
         wait = (1.0 - self.tokens) / refill_rate
         return False, round(wait, 1)
 
@@ -50,6 +52,7 @@ class RateLimiter:
         self.rpm = rpm or settings.rate_limit_rpm
         self.burst = burst or settings.rate_limit_burst
         self._buckets: dict[str, _Bucket] = {}
+        self._last_cleanup = time.monotonic()
 
     def check(self, key: str) -> tuple[bool, float]:
         """Check if request is allowed for the given key.
@@ -57,11 +60,31 @@ class RateLimiter:
         Returns:
             (allowed, retry_after_seconds)
         """
+        now = time.monotonic()
+
+        # Periodic cleanup of stale buckets
+        if now - self._last_cleanup > CLEANUP_INTERVAL:
+            self._cleanup(now)
+            self._last_cleanup = now
+
+        # Reject new keys when at capacity (prevents memory exhaustion)
         if key not in self._buckets:
+            if len(self._buckets) >= MAX_BUCKETS:
+                return False, 60.0
             self._buckets[key] = _Bucket(
                 tokens=float(self.burst),
-                last_refill=time.monotonic(),
+                last_refill=now,
                 rpm=self.rpm,
                 burst=self.burst,
             )
+
         return self._buckets[key].consume()
+
+    def _cleanup(self, now: float) -> None:
+        """Remove buckets unused for > STALE_AGE seconds."""
+        stale = [
+            k for k, v in self._buckets.items()
+            if now - v.last_refill > STALE_AGE
+        ]
+        for k in stale:
+            del self._buckets[k]
