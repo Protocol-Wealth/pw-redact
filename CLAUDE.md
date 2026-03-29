@@ -137,7 +137,7 @@ pw-redact (PRODUCER — this repo) — DEPLOYED: pw-redact.fly.dev
 ```
 pw-redact/
 ├── CLAUDE.md                    # This file — build instructions (public)
-├── LICENSE                      # Apache 2.0
+├── LICENSE                      # MIT
 ├── README.md                    # Public-facing docs, usage guide, architecture
 ├── CONTRIBUTING.md              # How to contribute, code standards
 ├── CHANGELOG.md                 # Version history
@@ -841,7 +841,7 @@ func (s *MeetingService) RedactText(ctx context.Context, text, docContext string
 
 When Claude Code builds this repo, follow this order:
 
-1. **Scaffold** — pyproject.toml, Dockerfile, fly.toml.example, .env.example, .gitignore, LICENSE (Apache 2.0), directory structure
+1. **Scaffold** — pyproject.toml, Dockerfile, fly.toml.example, .env.example, .gitignore, LICENSE (MIT), directory structure
 2. **README.md** — public-facing documentation (see §14 below)
 3. **Config** — pydantic-settings, env var loading, auth middleware
 4. **Layer 1** — regex_patterns.py with all patterns, unit tests
@@ -949,7 +949,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-Apache 2.0 — free for commercial use.
+MIT — free for commercial use.
 
 ## Built By
 
@@ -998,5 +998,5 @@ AI infrastructure for the advisory industry.
 ---
 
 *Protocol Wealth LLC | SEC-Registered Investment Adviser (CRD #335298)*
-*pw-redact is open-source infrastructure under Apache 2.0.*
+*pw-redact is open-source infrastructure under MIT license.*
 *Internal deployment config is private. Code and logic are public.*

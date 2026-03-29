@@ -25,7 +25,7 @@ amounts, percentages, tax brackets, and financial acronyms.
 | `src/pw_redact/redactor/allow_list.py` | Layer 4: financial data preservation |
 | `src/pw_redact/security/` | Input validation, injection detection, output validation, rate limiting |
 | `src/pw_redact/rehydrator/engine.py` | Manifest-based placeholder restoration |
-| `tests/` | 297 tests across 6 test files |
+| `tests/` | 332 tests across 9 test files (97% coverage) |
 
 ## Commands
 
@@ -59,7 +59,7 @@ fly deploy -a pw-redact --remote-only
 4. **Financial data must survive.** Verify allow-list doesn't conflict when adding patterns.
 5. **Security matters.** This sits at the chokepoint of an AI pipeline processing SEC-regulated data. Use `hmac.compare_digest()` for secrets, validate all external input, use possessive quantifiers in regex to prevent ReDoS.
 6. **This is a public repo.** No internal URLs, no vendor-specific references, no PW business logic.
-7. **Run tests before committing.** All 297 tests must pass. Lint must pass.
+7. **Run tests before committing.** All 332 tests must pass. Lint + format must pass. Coverage must stay above 85%.
 
 ## Architecture
 
