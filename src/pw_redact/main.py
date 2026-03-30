@@ -155,9 +155,7 @@ async def landing_page() -> HTMLResponse:
   </table>
 
   <h2>Quick Example</h2>
-  <pre>curl -X POST {
-            _GITHUB_URL.replace("github.com/Protocol-Wealth/pw-redact", "pw-redact.fly.dev")
-        }/v1/redact \\
+  <pre>curl -X POST https://YOUR_DEPLOYMENT_URL/v1/redact \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{{"text": "John Smith SSN 123-45-6789. AGI $425,000.", "context": "general"}}'</pre>
@@ -177,8 +175,7 @@ async def landing_page() -> HTMLResponse:
   </ul>
 
   <footer>
-    <p>Built by <a href="https://protocolwealthllc.com">Protocol Wealth LLC</a>
-    — SEC-Registered Investment Adviser (CRD #335298)</p>
+    <p>Built by <a href="https://protocolwealthllc.com">Protocol Wealth LLC</a></p>
     <p>Security issues: <a href="mailto:security@protocolwealthllc.com">
     security@protocolwealthllc.com</a></p>
   </footer>
@@ -200,7 +197,6 @@ dollar amounts, percentages, tax brackets, and other financial data.
 
 ## API
 
-Base URL: https://pw-redact.fly.dev
 Auth: Bearer token in Authorization header
 Health: GET /v1/health (no auth)
 
@@ -254,7 +250,7 @@ ages, IRS form references, 60+ financial acronyms (AGI, LTV, DTI, TILA, etc.)
 Repository: {_GITHUB_URL}
 License: MIT
 Version: {__version__}
-Built by: Protocol Wealth LLC (SEC-RIA, CRD #335298)
+Built by: Protocol Wealth LLC
 """
     )
 
@@ -285,7 +281,6 @@ async def security_txt() -> PlainTextResponse:
     return PlainTextResponse(
         content=f"""Contact: mailto:security@protocolwealthllc.com
 Preferred-Languages: en
-Canonical: https://pw-redact.fly.dev/.well-known/security.txt
 Policy: {_GITHUB_URL}/blob/main/SECURITY.md
 Expires: 2027-03-28T00:00:00.000Z
 """

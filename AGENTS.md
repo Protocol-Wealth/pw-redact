@@ -11,7 +11,7 @@ amounts, percentages, tax brackets, and financial acronyms.
 
 **Stack:** Python 3.12 · FastAPI · Presidio · spaCy · Fly.io
 **License:** MIT
-**Deployed at:** https://pw-redact.fly.dev
+**Deployment:** Configure via fly.toml (not committed)
 
 ## Key Files
 

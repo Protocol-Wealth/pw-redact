@@ -6,7 +6,7 @@
 
 IMPORTANT: This module DETECTS, it does not BLOCK. Financial advisors may
 legitimately paste client emails or documents that contain unusual text.
-We flag it and let the caller (pw-nexus, pw-portal) decide policy.
+We flag it and let the caller decide policy.
 """
 
 from __future__ import annotations

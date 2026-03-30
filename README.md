@@ -531,4 +531,4 @@ MIT — free for commercial use. See [LICENSE](LICENSE).
 [Protocol Wealth LLC](https://protocolwealthllc.com) — SEC-registered investment adviser
 building transparent AI infrastructure for the advisory industry.
 
-*Protocol Wealth LLC | SEC-Registered Investment Adviser (CRD #335298)*
+*Built by [Protocol Wealth LLC](https://protocolwealthllc.com)*

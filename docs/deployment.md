@@ -130,7 +130,7 @@ fly secrets set PW_REDACT_API_KEY=new-strong-random-key
 docker run -e PW_REDACT_API_KEY=new-key ...
 ```
 
-Update the key in all consumers (pw-nexus, pw-portal, etc.) simultaneously,
+Update the key in all consumers simultaneously,
 or implement a brief dual-key period by deploying a custom auth middleware.
 
 ## Scaling

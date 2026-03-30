@@ -125,7 +125,7 @@ PATTERN_DEFS: dict[str, _PatternDef] = {
         score=0.85,
         group=1,
     ),
-    # --- From pw-nexus mcp_pii_filter.py ---
+    # --- PII filter patterns ---
     "US_ROUTING": _PatternDef(
         regex=r"(?i)(?:routing|aba|transit)\s*(?:(?:#|no\.?|number)\s*)?(?::?\s*)([0-3]\d{8})\b",
         score=0.80,

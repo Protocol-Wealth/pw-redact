@@ -286,7 +286,7 @@ class TestCryptoSeed:
         )
 
 
-# ── PASSWORD (from pw-nexus secure_logging.py) ─────────────────────
+# ── PASSWORD ──────────────────────────────────────────────────────
 
 
 class TestPassword:
@@ -304,7 +304,7 @@ class TestPassword:
         assert "PASSWORD" not in _types("password=ab")
 
 
-# ── SECRET_VALUE (from pw-nexus secure_logging.py) ─────────────────
+# ── SECRET_VALUE ──────────────────────────────────────────────────
 
 
 class TestSecretValue:
@@ -334,7 +334,7 @@ class TestSecretValue:
         assert "SECRET_VALUE" in _types("WEBHOOK_SECRET=whsec_abc123def456")
 
 
-# ── AUTH_TOKEN (from pw-nexus secure_logging.py) ───────────────────
+# ── AUTH_TOKEN ────────────────────────────────────────────────────
 
 
 class TestAuthToken:
@@ -354,7 +354,7 @@ class TestAuthToken:
         assert "AUTH_TOKEN" not in _types("access_token=short")
 
 
-# ── MAGIC_LINK (from pw-nexus secure_logging.py) ──────────────────
+# ── MAGIC_LINK ────────────────────────────────────────────────────
 
 
 class TestMagicLink:
@@ -518,7 +518,7 @@ class TestFileReference:
         assert "FILE_REFERENCE" not in _types("Reference: NCS-123456-LA")
 
 
-# ── US_ROUTING (from pw-nexus mcp_pii_filter.py) ──────────────────
+# ── US_ROUTING ────────────────────────────────────────────────────
 
 
 class TestUSRouting:
@@ -544,7 +544,7 @@ class TestUSRouting:
         assert texts == ["021000021"]
 
 
-# ── DRIVERS_LICENSE (from pw-nexus mcp_pii_filter.py) ─────────────
+# ── DRIVERS_LICENSE ───────────────────────────────────────────────
 
 
 class TestDriversLicense:
@@ -566,7 +566,7 @@ class TestDriversLicense:
         assert texts == ["A12345678"]
 
 
-# ── STREET_ADDRESS (from pw-nexus mcp_pii_filter.py) ──────────────
+# ── STREET_ADDRESS ────────────────────────────────────────────────
 
 
 class TestStreetAddress:
@@ -589,7 +589,7 @@ class TestStreetAddress:
         assert "STREET_ADDRESS" not in _types("The number 42 is important")
 
 
-# ── CRM_ID (generalized from pw-nexus Wealthbox pattern) ─────────
+# ── CRM_ID ────────────────────────────────────────────────────────
 
 
 class TestCRMId:
@@ -617,7 +617,7 @@ class TestCRMId:
         assert texts == ["987654"]
 
 
-# ── PLATFORM_ID (generalized from pw-nexus Turnkey/SubOrg pattern) ─
+# ── PLATFORM_ID ───────────────────────────────────────────────────
 
 
 class TestPlatformId:

@@ -5,12 +5,11 @@
 > **GitHub:** github.com/Protocol-Wealth/pw-redact
 > **Purpose:** Open-source PII redaction engine for financial services AI pipelines
 > **Stack:** Python 3.12 · FastAPI · Presidio · spaCy · Fly.io
-> **Status:** v0.1.0 DEPLOYED — pw-redact.fly.dev (ord region, 2GB RAM)
+> **Status:** v0.1.0
 >
 > **Open-source rationale:** pw-redact is infrastructure, not proprietary business logic.
-> Publishing it demonstrates to regulators, clients, and the public exactly how Protocol
-> Wealth handles client data before it reaches any AI model. The EMF framework, scoring
-> pipeline, vault strategies, and client data remain private in separate repositories.
+> Publishing it demonstrates to regulators, clients, and the public exactly how
+> client data is handled before it reaches any AI model.
 
 ---
 
@@ -27,11 +26,11 @@
 
 ### What NEVER goes in this repo:
 - API keys, secrets, tokens, passwords (use env vars exclusively)
-- Internal URLs (no protocolwealthllc.com, nexusmcp.site, pwdashboard.com)
+- Internal URLs for private services or dashboards
 - Client data, real transcripts, real names, real SSNs
-- PW-specific deployment config (actual fly.toml with app name, actual .env)
+- Organization-specific deployment config (actual fly.toml, actual .env)
 - References to specific clients, advisors, or internal business processes
-- AGENTS.md or ria.md (those are private governance docs)
+- Private governance or compliance documents
 
 ### Deployment separation:
 - **Public repo:** github.com/Protocol-Wealth/pw-redact (code, tests, docs)
@@ -55,7 +54,7 @@ invites contributions, and builds PW's reputation as a builder in the space.
 
 ## 1. WHAT THIS SERVICE DOES
 
-pw-redact is a stateless PII redaction API that sits between client-facing data ingestion (pw-portal) and external AI inference (RunPod/Nemotron, Claude API). It ensures no client PII ever reaches third-party model providers.
+pw-redact is a stateless PII redaction API that sits between data ingestion and external AI inference. It ensures no client PII ever reaches third-party model providers.
 
 **Core flow:**
 ```
@@ -70,7 +69,7 @@ Raw client text (transcript, tax return, notes)
    └── Returns: sanitized_text + redaction_manifest
         │
         ▼
-   Sanitized text → RunPod/Nemotron or Claude API (safe to send externally)
+   Sanitized text → LLM provider (safe to send externally)
         │
         ▼
    pw-redact /v1/rehydrate
@@ -82,7 +81,7 @@ Raw client text (transcript, tax return, notes)
 - STATELESS: pw-redact stores nothing. Manifests are returned to the caller.
 - DETERMINISTIC FIRST: Regex patterns run before NLP. If regex catches it, NLP doesn't need to.
 - FINANCIAL DATA SURVIVES: Dollar amounts, percentages, tax brackets, dates, basis points — these are not PII and must pass through intact for AI models to analyze.
-- SINGLE ENFORCEMENT POINT: Every PW service that sends client data externally calls pw-redact first. No exceptions.
+- SINGLE ENFORCEMENT POINT: Every service that sends client data externally calls pw-redact first.
 
 ---
 
@@ -98,38 +97,21 @@ pw-redact (FastAPI on Fly.io)
 ├── PRODUCES: /v1/detect — PII detection only (no redaction, returns locations)
 ├── CONSUMES: Nothing external — fully self-contained
 ├── AUTH: Internal API key (PW_REDACT_API_KEY) — service-to-service only
-└── NOT client-facing — only called by pw-nexus and pw-portal backends
+└── NOT client-facing — called by backend services only
 ```
 
-### 2.2 Cross-Repo Contracts
+### 2.2 Integration Pattern
+
+Consumer services call pw-redact as a pre/post-processing step around LLM inference:
 
 ```
-pw-nexus (CONSUMER) — CONFIRMED: integration patterns match built API
-├── Calls POST /v1/redact before sending text to RunPod or Claude API
+Consumer backend
+├── Calls POST /v1/redact before sending text to LLM provider
 ├── Calls POST /v1/rehydrate after receiving AI model output
 ├── Uses PW_REDACT_API_KEY for auth (Bearer token in Authorization header)
 ├── Request format: {"text": "...", "context": "meeting_transcript"}
 ├── Response format: {"sanitized_text": "...", "manifest": {...}}
 └── Env vars: PW_REDACT_URL, PW_REDACT_API_KEY
-
-pw-portal (CONSUMER) — CONFIRMED: integration patterns match built API
-├── Calls POST /v1/redact from Go backend when advisor pastes/uploads text
-├── Stores redaction_manifest in Neon alongside client_id
-├── Calls POST /v1/rehydrate to display results to advisor
-├── Rehydrate request: {"text": "...", "manifest": {...}}
-├── Rehydrate response: {"rehydrated_text": "..."}
-└── Env vars: PW_REDACT_URL, PW_REDACT_API_KEY
-
-pw-redact (PRODUCER — this repo) — DEPLOYED: pw-redact.fly.dev
-├── No database — stateless
-├── No external API calls — all processing is local
-├── spaCy en_core_web_lg loaded at startup via FastAPI lifespan (~560MB)
-├── Presidio AnalyzerEngine initialized once, reused per request
-├── 30 regex patterns + Presidio NLP + 3 custom recognizers + allow-list
-├── 6 document contexts: general, meeting_transcript, tax_return,
-│   financial_notes, mortgage, real_estate
-├── Endpoints: /v1/redact, /v1/rehydrate, /v1/detect, /v1/health
-└── Auth: Bearer token via PW_REDACT_API_KEY (health endpoint is public)
 ```
 
 ### 2.3 File Structure
@@ -299,11 +281,11 @@ Returns `{"status": "healthy", "version": "0.1.0", "models_loaded": true}`.
 
 ### 4.1 Layer 1: Deterministic Regex Patterns (regex_patterns.py)
 
-Port these patterns from pw-nexus `mask_sensitive_data()` and extend:
+Deterministic regex patterns for common PII types:
 
 ```python
 PATTERNS = {
-    # === EXISTING (from pw-nexus) ===
+    # === Core patterns ===
     "US_SSN": r'\b\d{3}[- ]?\d{2}[- ]?\d{4}\b',
     "CREDIT_CARD": r'\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b',
     "API_KEY": r'["\']?(?:api[_-]?key|apikey)["\']?\s*[=:]\s*["\']?([A-Za-z0-9._-]{10,})["\']?',
@@ -647,7 +629,7 @@ async def verify_api_key(authorization: str = Header(...)):
         raise HTTPException(status_code=403, detail="Invalid API key")
 ```
 
-**NOT** OAuth, NOT JWT, NOT user-facing. This service is only called by pw-nexus and pw-portal backends. A strong random API key is sufficient and avoids unnecessary complexity.
+**NOT** OAuth, NOT JWT, NOT user-facing. This service is only called by backend services. A strong random API key is sufficient and avoids unnecessary complexity.
 
 ---
 
@@ -742,25 +724,21 @@ prod = []
 
 ## 9. CONSUMER INTEGRATION GUIDE
 
-> **Note:** This section is for Claude Code building pw-nexus and pw-portal integrations.
-> It references internal PW services. The public README uses generic examples instead.
-
-### 9.1 pw-nexus Integration (Python)
+### 9.1 Python Integration
 
 ```python
-# In pw-nexus MCP tool
 import httpx
 
-PW_REDACT_URL = os.getenv("PW_REDACT_URL")
-PW_REDACT_KEY = os.getenv("PW_REDACT_API_KEY")
+REDACT_URL = os.getenv("PW_REDACT_URL")
+REDACT_KEY = os.getenv("PW_REDACT_API_KEY")
 
 async def redact_text(text: str, context: str = "meeting_transcript") -> dict:
     """Redact PII via pw-redact service."""
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            f"{PW_REDACT_URL}/v1/redact",
+            f"{REDACT_URL}/v1/redact",
             json={"text": text, "context": context},
-            headers={"Authorization": f"Bearer {PW_REDACT_KEY}"},
+            headers={"Authorization": f"Bearer {REDACT_KEY}"},
             timeout=30.0,
         )
         response.raise_for_status()
@@ -770,20 +748,19 @@ async def rehydrate_text(text: str, manifest: dict) -> str:
     """Restore PII placeholders from manifest."""
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            f"{PW_REDACT_URL}/v1/rehydrate",
+            f"{REDACT_URL}/v1/rehydrate",
             json={"text": text, "manifest": manifest},
-            headers={"Authorization": f"Bearer {PW_REDACT_KEY}"},
+            headers={"Authorization": f"Bearer {REDACT_KEY}"},
             timeout=10.0,
         )
         response.raise_for_status()
         return response.json()["rehydrated_text"]
 ```
 
-### 9.2 pw-portal Integration (Go)
+### 9.2 Go Integration
 
 ```go
-// In pw-portal backend handler
-func (s *MeetingService) RedactText(ctx context.Context, text, docContext string) (*RedactResponse, error) {
+func (s *Service) RedactText(ctx context.Context, text, docContext string) (*RedactResponse, error) {
     payload := map[string]interface{}{
         "text":    text,
         "context": docContext,
@@ -831,9 +808,9 @@ func (s *MeetingService) RedactText(ctx context.Context, text, docContext string
 - **Document type auto-detection:** Infer context from content (is this a transcript? tax return? estate doc?)
 - **Batch endpoint:** POST /v1/redact/batch for processing multiple documents
 - **Confidence thresholds:** Let callers specify minimum confidence for redaction (e.g., only redact PERSON entities with score > 0.8)
-- **Custom entity types:** Allow pw-nexus to register new entity patterns via API
+- **Custom entity types:** Allow consumers to register new entity patterns via API
 - **Metrics endpoint:** Prometheus metrics for monitoring redaction rates, entity type distributions
-- **Google Drive integration:** Pull transcripts directly from Drive, redact, return (currently pw-nexus or pw-portal handles this)
+- **Google Drive integration:** Pull transcripts directly from Drive, redact, return
 
 ---
 
@@ -877,10 +854,9 @@ with step 8. Steps 12-14 deferred (examples/, docs/, CI workflow not yet created
   caused massive false positives.
 - DRIVERS_LICENSE pattern restricted to context keywords (driver/DL) rather than
   bare `\b[A-Z]\d{7,14}\b` which matched nearly any alphanumeric reference.
-- CRM_ID and PLATFORM_ID generalized from pw-nexus vendor-specific patterns
-  (Wealthbox, Turnkey) to vendor-agnostic context keywords.
+- CRM_ID and PLATFORM_ID generalized to vendor-agnostic context keywords.
 - Added 7 mortgage/RE patterns, 3 crypto patterns, and 4 secret patterns beyond
-  the original spec, backported from pw-nexus mcp_pii_filter.py and secure_logging.py.
+  the original spec.
 - `mortgage` and `real_estate` document contexts added (not in original spec).
 - spaCy detects "John Smith's" (with possessive) as the full PERSON entity span.
   README examples updated to match actual behavior.
@@ -997,6 +973,4 @@ AI infrastructure for the advisory industry.
 
 ---
 
-*Protocol Wealth LLC | SEC-Registered Investment Adviser (CRD #335298)*
-*pw-redact is open-source infrastructure under MIT license.*
-*Internal deployment config is private. Code and logic are public.*
+*Protocol Wealth LLC — pw-redact is open-source infrastructure under MIT license.*
