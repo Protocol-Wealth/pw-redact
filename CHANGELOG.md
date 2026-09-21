@@ -4,6 +4,11 @@ All notable changes to pw-redact will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] - 2026-09-21
+
+### Changed
+- Repository agent instructions now live in `AGENTS.md`, and root `CLAUDE.md` was removed after its still-current facts moved.
+
 ## [0.1.0] - 2026-03-29
 
 ### Added
