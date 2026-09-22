@@ -1,6 +1,8 @@
 # AGENTS.md — pw-redact
 
-Instructions for AI coding assistants working in this repository.
+Engineering and regulatory standards for every agent are `~/projects/AGENTS.md`.
+Where this file conflicts with that one, that one wins. This file is only what
+is specific to this repository. It does not describe what is live.
 
 ## What This Repo Is
 
@@ -8,6 +10,10 @@ pw-redact is an open-source PII redaction engine for financial services AI pipel
 It strips personally identifiable information from financial text (meeting transcripts,
 tax notes, mortgage documents) before it reaches AI models, while preserving dollar
 amounts, percentages, tax brackets, and financial acronyms.
+
+It is stateless: it stores nothing, and redaction manifests are returned to the caller.
+Regex runs before NLP. Authentication is a service-to-service API key
+(`PW_REDACT_API_KEY`); the API is not client-facing.
 
 **Stack:** Python 3.12 · FastAPI · Presidio · spaCy · Fly.io
 **License:** MIT
@@ -46,6 +52,26 @@ uvicorn pw_redact.main:app --port 8080
 fly deploy -a pw-redact --remote-only
 ```
 
+## Boundaries
+
+Public repository. What belongs here: redaction logic, regex patterns, Presidio
+configuration, financial allow-list, API server code, tests, documentation,
+synthetic fixtures only, and generic deployment examples (`Dockerfile`,
+`fly.toml.example`).
+
+Never commit:
+
+- API keys, secrets, tokens, or passwords (use env vars exclusively)
+- Internal URLs for private services or dashboards
+- Client data, real transcripts, real names, or real SSNs
+- Organization-specific deployment config (actual `fly.toml`, actual `.env`)
+- References to specific clients, advisors, or internal business processes
+- Private governance or compliance documents
+- Vendor-specific references or PW business logic
+
+Deployment separation: `fly.toml.example` stays in the repo with placeholder
+values. Actual `fly.toml` and `.env` are gitignored.
+
 ## Rules
 
 1. **No real PII.** Test fixtures use synthetic data only. Never include real names, SSNs, addresses, or client data.
@@ -60,6 +86,11 @@ fly deploy -a pw-redact --remote-only
 5. **Security matters.** This sits at the chokepoint of an AI pipeline processing SEC-regulated data. Use `hmac.compare_digest()` for secrets, validate all external input, use possessive quantifiers in regex to prevent ReDoS.
 6. **This is a public repo.** No internal URLs, no vendor-specific references, no PW business logic.
 7. **Run tests before committing.** All 332 tests must pass. Lint + format must pass. Coverage must stay above 85%.
+
+## Deploy and CI
+
+- Template: `fly.toml.example`. Copy to `fly.toml` locally; do not commit it.
+- CI: `.github/workflows/ci.yml` runs `ruff check src/` and `pytest tests/` with `--cov-fail-under=85`.
 
 ## Architecture
 
@@ -95,7 +126,6 @@ Quick version:
 
 ## Related Documentation
 
-- [CLAUDE.md](CLAUDE.md) — Detailed build specification and internal notes
 - [docs/architecture.md](docs/architecture.md) — Pipeline deep dive
 - [docs/deployment.md](docs/deployment.md) — Deployment guide
 - [docs/allow-list-guide.md](docs/allow-list-guide.md) — Allow-list customization

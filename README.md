@@ -471,7 +471,7 @@ pw-redact/
 |-- SECURITY.md                  # Vulnerability disclosure policy
 |-- CONTRIBUTING.md              # Code standards, PR process
 |-- CHANGELOG.md                 # Version history
-|-- CLAUDE.md                    # AI coding assistant build guide
+|-- AGENTS.md                    # Repository-specific agent instructions
 |-- Dockerfile                   # Production container
 |-- fly.toml.example             # Fly.io deployment template
 `-- pyproject.toml               # Dependencies, build config, tool settings
@@ -485,7 +485,7 @@ pw-redact/
 | [docs/architecture.md](docs/architecture.md) | Four-layer pipeline design, merge algorithm, security pipeline |
 | [docs/deployment.md](docs/deployment.md) | Docker, Fly.io, Railway, AWS/GCP deployment guide |
 | [docs/allow-list-guide.md](docs/allow-list-guide.md) | How to customize financial data preservation |
-| [CLAUDE.md](CLAUDE.md) | AI coding assistant guide — how this repo was built with Claude Code |
+| [AGENTS.md](AGENTS.md) | Repository-specific agent instructions |
 | [SECURITY.md](SECURITY.md) | Vulnerability reporting: security@protocolwealthllc.com |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Code standards, adding patterns, PR process |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
