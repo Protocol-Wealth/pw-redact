@@ -1,6 +1,6 @@
 # Copyright 2026 Protocol Wealth LLC
 # Licensed under the MIT License
-# https://github.com/Protocol-Wealth/pw-redact
+# https://github.com/Protocol-Wealth/pw-redact-core
 
 """Regression tests — golden-file checks that catch unintended changes to
 redaction behavior. If a pattern change alters what gets redacted or preserved,

@@ -1,6 +1,6 @@
 # Copyright 2026 Protocol Wealth LLC
 # Licensed under the MIT License
-# https://github.com/Protocol-Wealth/pw-redact
+# https://github.com/Protocol-Wealth/pw-redact-core
 
 """Layer 4: Allow-list patterns for financial data that must survive redaction."""
 

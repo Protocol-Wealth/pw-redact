@@ -1,8 +1,11 @@
-# pw-redact
+# pw-redact-core
 
 **Open-source PII redaction engine for financial services AI pipelines.**
 
-[![CI](https://github.com/Protocol-Wealth/pw-redact/actions/workflows/ci.yml/badge.svg)](https://github.com/Protocol-Wealth/pw-redact/actions/workflows/ci.yml)
+The repository is named `pw-redact-core`; the Python package and API retain the `pw-redact` name.
+
+**Project status:** This repository is a reference implementation. Its [CI workflow](.github/workflows/ci.yml) is manual-only and identifies the project as discontinued in favor of the pw-os PII guard. The examples below describe this codebase; they do not indicate an active deployment.
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 
@@ -511,7 +514,7 @@ Check if the value matches an allow-list pattern. If not, add one.
 See [docs/allow-list-guide.md](docs/allow-list-guide.md).
 
 **False negative — PII not caught:**
-Open a [bug report](https://github.com/Protocol-Wealth/pw-redact/issues/new?template=bug_report.md)
+Open a [bug report](https://github.com/Protocol-Wealth/pw-redact-core/issues/new?template=bug_report.md)
 with synthetic example data (never real PII).
 
 **"max" detected as person name:**

@@ -79,7 +79,7 @@ values. Actual `fly.toml` and `.env` are gitignored.
    ```python
    # Copyright 2026 Protocol Wealth LLC
    # Licensed under the MIT License
-   # https://github.com/Protocol-Wealth/pw-redact
+   # https://github.com/Protocol-Wealth/pw-redact-core
    ```
 3. **Every new regex pattern** needs 3+ test cases (match, non-match, extracted text).
 4. **Financial data must survive.** Verify allow-list doesn't conflict when adding patterns.
