@@ -12,7 +12,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install ruff
-        run: pip install ruff>=0.7.0
+        run: pip install 'ruff>=0.7.0'
       - name: Lint check
         run: ruff check src/
       - name: Format check

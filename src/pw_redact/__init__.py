@@ -1,6 +1,6 @@
 # Copyright 2026 Protocol Wealth LLC
 # Licensed under the MIT License
-# https://github.com/Protocol-Wealth/pw-redact
+# https://github.com/Protocol-Wealth/pw-redact-core
 
 """pw-redact: PII redaction engine for financial services AI pipelines."""
 

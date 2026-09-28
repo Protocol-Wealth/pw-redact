@@ -1,6 +1,6 @@
 # Copyright 2026 Protocol Wealth LLC
 # Licensed under the MIT License
-# https://github.com/Protocol-Wealth/pw-redact
+# https://github.com/Protocol-Wealth/pw-redact-core
 
 """FastAPI application entry point with security hardening."""
 
@@ -28,7 +28,7 @@ _redactor: PWRedactor | None = None
 _rehydrator = PWRehydrator()
 _rate_limiter: RateLimiter | None = None
 
-_GITHUB_URL = "https://github.com/Protocol-Wealth/pw-redact"
+_GITHUB_URL = "https://github.com/Protocol-Wealth/pw-redact-core"
 
 
 def get_redactor() -> PWRedactor:

@@ -15,7 +15,7 @@ community are welcome.
   ```python
   # Copyright 2026 Protocol Wealth LLC
   # Licensed under the MIT License
-  # https://github.com/Protocol-Wealth/pw-redact
+  # https://github.com/Protocol-Wealth/pw-redact-core
   ```
 
 ## Adding New Entity Types
@@ -64,8 +64,8 @@ real SSNs, real addresses, or any data derived from actual client records.
 ## Development Setup
 
 ```bash
-git clone https://github.com/Protocol-Wealth/pw-redact.git
-cd pw-redact
+git clone https://github.com/Protocol-Wealth/pw-redact-core.git
+cd pw-redact-core
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 python -m spacy download en_core_web_lg
